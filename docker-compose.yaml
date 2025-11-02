@@ -1,0 +1,21 @@
+x-environment: &environment
+  ENVIRONMENT: "local"
+
+x-build: &build
+  context: .
+  dockerfile: Dockerfile
+
+x-base: &base
+  image: ${IMAGE_NAME:-uav-service}
+  build: *build
+  volumes:
+    - .:/usr/src/app
+
+services:
+  app:
+    <<: *base
+    entrypoint: ["docker/start.sh"]
+    environment:
+      <<: *environment
+    ports:
+      - "8000:8000"
