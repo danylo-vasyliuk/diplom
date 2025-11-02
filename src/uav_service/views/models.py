@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
+from uav_service.logic.models import Coordinates, Coordinates3D, Drone
+
 
 class UavComputeRequest(BaseModel):
-    user_id: int
+    user: Coordinates
 
 
 class UavComputeResponse(BaseModel):
-    user_id: int
+    drones: list[Drone]
