@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>UAV Swarm Interface</title>
+  <style>
+      :root {
+          --bg-dark: #020617;
+          --bg-sidebar: #020617;
+          --bg-card: #0f172a;
+          --bg-card-soft: #020617;
+          --accent: #3b82f6;
+          --accent-soft: rgba(59, 130, 246, 0.14);
+          --border-soft: #1f2937;
+          --text-muted: #9ca3af;
+      }
+
+      * {
+          box-sizing: border-box;
+      }
+
+      body {
+          margin: 0;
+          padding: 0;
+          height: 100vh;
+          background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+          color: #e5e7eb;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      }
+
+      /* APP LAYOUT */
+
+      .app {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+      }
+
+      .topbar {
+          height: 56px;
+          padding: 0 20px;
+          border-bottom: 1px solid #111827;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          backdrop-filter: blur(18px);
+          background: linear-gradient(to right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.6));
+      }
+
+      .topbar-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+      }
+
+      .logo-mark {
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          background: radial-gradient(circle at 30% 20%, #60a5fa, #1d4ed8 55%, #020617 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+          font-size: 14px;
+          font-weight: 700;
+      }
+
+      .logo-text {
+          display: flex;
+          flex-direction: column;
+      }
+
+      .logo-title {
+          font-size: 16px;
+          font-weight: 600;
+      }
+
+      .logo-subtitle {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+          color: var(--text-muted);
+      }
+
+      .topbar-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 14px;
+      }
+
+      .tag {
+          padding: 3px 8px;
+          border-radius: 999px;
+          border: 1px solid rgba(148, 163, 184, 0.4);
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #e5e7eb;
+          background: rgba(15, 23, 42, 0.7);
+      }
+
+      .user-pill {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 4px 10px 4px 4px;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.9);
+          border: 1px solid #1f2937;
+      }
+
+      .user-avatar {
+          width: 26px;
+          height: 26px;
+          border-radius: 999px;
+          background: radial-gradient(circle at 30% 20%, #4ade80, #22c55e 50%, #166534 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 600;
+      }
+
+      .user-name {
+          font-size: 13px;
+      }
+
+      .logout-btn {
+          border: none;
+          background: rgba(239, 68, 68, 0.15);
+          color: #fecaca;
+          padding: 6px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+      }
+
+      .logout-btn:hover {
+          background: rgba(239, 68, 68, 0.25);
+      }
+
+      .layout {
+          flex: 1;
+          display: grid;
+          grid-template-columns: 320px minmax(0, 1.5fr) 290px;
+          height: calc(100vh - 56px);
+      }
+
+      /* SIDEBAR (LEFT) */
+
+      .sidebar {
+          background: var(--bg-sidebar);
+          padding: 16px 16px 16px 18px;
+          border-right: 1px solid #111827;
+          overflow-y: auto;
+      }
+
+      .sidebar-heading {
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+          color: var(--text-muted);
+          margin-bottom: 10px;
+      }
+
+      .card {
+          background: var(--bg-card-soft);
+          border-radius: 16px;
+          padding: 14px 14px 12px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(15, 23, 42, 0.9);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+      }
+
+      .card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+      }
+
+      .card-title {
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #9ca3af;
+      }
+
+      .card-badge {
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.8);
+          border: 1px solid #1f2937;
+          color: #6b7280;
+      }
+
+      .field-row {
+          display: flex;
+          gap: 10px;
+          width: 100%;
+      }
+
+      .field {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 8px;
+      }
+
+      .field label {
+          font-size: 11px;
+          margin-bottom: 3px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+      }
+
+      .field input {
+          background: #020617;
+          border: 1px solid #1f2937;
+          border-radius: 10px;
+          padding: 7px 9px;
+          color: #e5e7eb;
+          width: 100%;
+          box-sizing: border-box;
+          font-size: 13px;
+      }
+
+      .field input:focus {
+          outline: none;
+          border-color: var(--accent);
+          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.6);
+      }
+
+      .field-caption {
+          font-size: 11px;
+          color: #6b7280;
+          margin-top: 2px;
+      }
+
+      .button-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 6px;
+      }
+
+      button {
+          background: #111827;
+          padding: 7px 11px;
+          border: 1px solid #1f2937;
+          border-radius: 999px;
+          color: #e5e7eb;
+          cursor: pointer;
+          font-size: 12px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+
+      button.primary {
+          background: var(--accent);
+          border-color: rgba(96, 165, 250, 0.9);
+          box-shadow: 0 0 18px rgba(59, 130, 246, 0.55);
+      }
+
+      button.danger {
+          background: rgba(239, 68, 68, 0.12);
+          border-color: rgba(239, 68, 68, 0.5);
+          color: #fecaca;
+      }
+
+      button:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+          background: #0f172a;
+      }
+
+      button.primary:hover {
+          background: #2563eb;
+      }
+
+      button.danger:hover {
+          background: rgba(239, 68, 68, 0.2);
+      }
+
+      button:active {
+          transform: translateY(0);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+      }
+
+      .hint {
+          margin-top: 6px;
+          font-size: 11px;
+          color: #6b7280;
+      }
+
+      /* MAIN CENTER AREA */
+
+      .main {
+          padding: 16px 16px 16px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+      }
+
+      .canvas-shell {
+          flex: 1;
+          border-radius: 24px;
+          padding: 12px;
+          background: radial-gradient(circle at top, #111827 0, #020617 52%);
+          box-shadow: 0 0 0 1px rgba(15, 23, 42, 1),
+          0 35px 80px rgba(0, 0, 0, 0.9);
+          position: relative;
+          overflow: hidden;
+      }
+
+      .canvas-shell::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 15% 0, rgba(59, 130, 246, 0.18), transparent 55%),
+          radial-gradient(circle at 85% 100%, rgba(34, 197, 94, 0.18), transparent 55%);
+          opacity: 0.7;
+          pointer-events: none;
+      }
+
+      .canvas-header {
+          position: absolute;
+          top: 10px;
+          left: 14px;
+          right: 14px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 11px;
+          z-index: 2;
+          color: #9ca3af;
+      }
+
+      .canvas-header-left {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+      }
+
+      .canvas-chip {
+          padding: 3px 8px;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.9);
+          border: 1px solid rgba(31, 41, 55, 0.9);
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+      }
+
+      .canvas-chip-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 999px;
+          background: #22c55e;
+          box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+      }
+
+      .canvas-chip-label {
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+      }
+
+      /* MINIMAP */
+
+      .minimap-container {
+          position: absolute;
+          top: 48px;
+          right: 18px;
+          width: 120px;
+          height: 120px;
+          border-radius: 999px;
+          border: 1px solid rgba(59, 130, 246, 0.5);
+          background: radial-gradient(circle at 30% 20%, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.7));
+          box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9),
+          0 18px 40px rgba(0, 0, 0, 0.9);
+          overflow: hidden;
+          z-index: 5;
+      }
+
+      #minimap {
+          width: 100%;
+          height: 100%;
+          display: block;
+      }
+
+      .minimap-pulse {
+          position: absolute;
+          inset: 0;
+          border-radius: 999px;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 70%);
+          animation: radarPulse 3s infinite ease-out;
+          pointer-events: none;
+      }
+
+      @keyframes radarPulse {
+          0% {
+              transform: scale(0.2);
+              opacity: 0.45;
+          }
+          70% {
+              opacity: 0.15;
+          }
+          100% {
+              transform: scale(1.6);
+              opacity: 0;
+          }
+      }
+
+      #canvas {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          max-width: 980px;
+          max-height: 640px;
+          display: block;
+          margin: 20px auto 0;
+          border-radius: 18px;
+          background: #020617;
+          box-shadow: 0 0 0 1px #111827,
+          0 25px 60px rgba(0, 0, 0, 0.9);
+      }
+
+      .status-bar {
+          font-size: 12px;
+          color: var(--text-muted);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 4px 0;
+      }
+
+      .status-items {
+          display: flex;
+          gap: 18px;
+      }
+
+      .status-label {
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          font-size: 11px;
+          color: #6b7280;
+      }
+
+      .status-value {
+          color: #e5e7eb;
+      }
+
+      .step-progress {
+          flex: 0 0 auto;
+          min-width: 120px;
+          height: 4px;
+          border-radius: 999px;
+          background: #020617;
+          overflow: hidden;
+          border: 1px solid #111827;
+      }
+
+      .step-progress-inner {
+          height: 100%;
+          width: 0;
+          background: linear-gradient(to right, #22c55e, #3b82f6);
+          transition: width 0.15s ease;
+      }
+
+      /* RIGHT PANEL */
+
+      .info-panel {
+          border-left: 1px solid #111827;
+          background: radial-gradient(circle at top, #020617 0, #020617 60%);
+          padding: 14px 14px 14px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+      }
+
+      .info-title {
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+          color: var(--text-muted);
+          margin-bottom: 4px;
+      }
+
+      .info-card {
+          flex: 1;
+          background: rgba(15, 23, 42, 0.95);
+          border-radius: 18px;
+          border: 1px solid rgba(31, 41, 55, 0.9);
+          padding: 12px;
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9),
+          inset 0 0 16px rgba(15, 23, 42, 0.9);
+          display: flex;
+          flex-direction: column;
+      }
+
+      .info-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+      }
+
+      .info-pill {
+          padding: 3px 8px;
+          border-radius: 999px;
+          border: 1px solid rgba(55, 65, 81, 0.9);
+          font-size: 11px;
+          color: #9ca3af;
+      }
+
+      .drone-list {
+          margin-top: 4px;
+          flex: 1;
+          overflow-y: auto;
+          padding-right: 4px;
+      }
+
+      .drone-item {
+          border-radius: 12px;
+          padding: 8px 8px;
+          margin-bottom: 6px;
+          background: rgba(15, 23, 42, 0.85);
+          border: 1px solid #1f2937;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          font-size: 11px;
+      }
+
+      .drone-item-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+
+      .drone-label {
+          font-size: 12px;
+          font-weight: 500;
+      }
+
+      .drone-chip {
+          padding: 2px 6px;
+          border-radius: 999px;
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          border: 1px solid rgba(75, 85, 99, 0.9);
+      }
+
+      .drone-meta {
+          display: flex;
+          gap: 10px;
+          color: #9ca3af;
+      }
+
+      .drone-meta span {
+          white-space: nowrap;
+      }
+
+      .drone-color-dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 999px;
+          margin-right: 4px;
+          box-shadow: 0 0 10px rgba(148, 163, 184, 0.6);
+      }
+
+      .empty-state {
+          margin-top: 12px;
+          font-size: 11px;
+          color: #6b7280;
+          text-align: center;
+      }
+
+      .legend {
+          font-size: 10px;
+          color: #6b7280;
+          margin-top: 8px;
+      }
+
+      @keyframes radarSpin {
+          0% {
+              transform: rotate(0deg);
+          }
+          100% {
+              transform: rotate(360deg);
+          }
+      }
+  </style>
+</head>
+<body>
+
+<!-- AUTH CHECK -->
+<script>
+    const storedUserInit = localStorage.getItem("uav_user");
+    if (!storedUserInit) {
+        window.location.href = "login.html";
+    }
+</script>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark">U</div>
+      <div class="logo-text">
+        <div class="logo-title">UAV Swarm Console</div>
+        <div class="logo-subtitle">Swarm coordination &amp; routing</div>
+      </div>
+      <span class="tag">Sandbox</span>
+    </div>
+    <div class="topbar-right">
+      <span class="tag">v0.1 · local</span>
+      <div class="user-pill">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-name" id="userName">user</div>
+        <button class="logout-btn" id="logoutBtn">
+          <span>⏏</span>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-heading">Mission setup</div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Base station</div>
+          <div class="card-badge">XYZ</div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Base X</label>
+            <input id="baseX" type="number" value="0">
+          </div>
+          <div class="field">
+            <label>Base Y</label>
+            <input id="baseY" type="number" value="0">
+          </div>
+        </div>
+        <div class="field">
+          <label>Base Z</label>
+          <input id="baseZ" type="number" value="10">
+          <div class="field-caption">Висота базової станції</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">User position</div>
+          <div class="card-badge">Target</div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>User X</label>
+            <input id="userX" type="number" value="60">
+          </div>
+          <div class="field">
+            <label>User Y</label>
+            <input id="userY" type="number" value="45">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Signal visualization</div>
+          <div class="card-badge">Params</div>
+        </div>
+        <div class="field">
+          <label>Signal range</label>
+          <input id="signalRange" type="number" step="5" value="40">
+          <div class="field-caption">Base radar range. Drone signals are 50% of this</div>
+        </div>
+        <div class="field">
+          <label>Signal angle</label>
+          <input id="signalAngle" type="number" step="5" value="55">
+          <div class="field-caption">Кут розкриття сигналу дронів (градуси)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Routing params</div>
+          <div class="card-badge">Step</div>
+        </div>
+        <div class="field">
+          <label>Step size</label>
+          <input id="stepSize" type="number" step="0.1" value="5">
+          <div class="field-caption">Крок руху дронів у моделі.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Control</div>
+          <div class="card-badge">Swarm</div>
+        </div>
+        <div class="button-row">
+          <button class="primary" id="recalcBtn">⚙ Перерахувати</button>
+          <button id="prevStep">← Крок назад</button>
+          <button id="nextStep">Крок вперед →</button>
+          <button id="startAnim">▶ Старт</button>
+          <button id="stopAnim">⏸ Стоп</button>
+          <button id="randomizeYaw">🔄 Рандомізувати Yaw</button>
+          <button class="danger" id="clearDrones">🗑 Очистити дронів</button>
+        </div>
+        <div class="hint">
+          • Клік по карті додає нового дрона.<br>
+          • Змінюєш параметри → тисни «Перерахувати».
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CENTER -->
+    <main class="main">
+      <div class="canvas-shell">
+        <div class="canvas-header">
+          <div class="canvas-header-left">
+            <div class="canvas-chip">
+              <span class="canvas-chip-dot"></span>
+              <span class="canvas-chip-label">Live sandbox</span>
+            </div>
+          </div>
+          <div class="canvas-header-right" style="font-size:11px; color:#6b7280;">
+            Click to spawn UAV · Scroll to inspect
+          </div>
+        </div>
+
+        <!-- MINIMAP -->
+        <div class="minimap-container">
+          <canvas id="minimap" width="120" height="120"></canvas>
+          <div class="minimap-pulse"></div>
+        </div>
+
+        <canvas id="canvas" width="900" height="600"></canvas>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-items">
+          <div>
+            <div class="status-label">Step</div>
+            <div class="status-value" id="statusStep">0</div>
+          </div>
+          <div>
+            <div class="status-label">Drones</div>
+            <div class="status-value" id="statusDrones">0</div>
+          </div>
+        </div>
+        <div class="step-progress">
+          <div class="step-progress-inner" id="stepProgressInner"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT INFO PANEL -->
+    <aside class="info-panel">
+      <div class="info-title">Swarm status</div>
+      <div class="info-card">
+        <div class="info-card-header">
+          <div class="card-title" style="margin:0;">Drones</div>
+          <div class="info-pill" id="droneCountPill">0 active</div>
+        </div>
+        <div id="droneList" class="drone-list">
+          <div class="empty-state">
+            Немає дронів. Додай першого кліком по карті.
+          </div>
+        </div>
+        <div class="legend">
+          Base — радар (повне покриття), User — помаранчева точка. Кольори дронів відповідають елементам у списку.<br>
+          Сектори — напрямки сигналів дронів (направлені).
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8000/api/uav-service/uav/compute/";
+
+    // Canvas & controls
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const minimap = document.getElementById("minimap");
+    const mm = minimap.getContext("2d");
+    const M_CENTER_X = minimap.width / 2;
+    const M_CENTER_Y = minimap.height / 2;
+    const M_SCALE = 0.6;
+
+    const baseXInput = document.getElementById("baseX");
+    const baseYInput = document.getElementById("baseY");
+    const baseZInput = document.getElementById("baseZ");
+    const userXInput = document.getElementById("userX");
+    const userYInput = document.getElementById("userY");
+    const stepInput = document.getElementById("stepSize");
+    const signalRangeInput = document.getElementById("signalRange");
+    const signalAngleInput = document.getElementById("signalAngle");
+
+    const recalcBtn = document.getElementById("recalcBtn");
+    const prevBtn = document.getElementById("prevStep");
+    const nextBtn = document.getElementById("nextStep");
+    const startBtn = document.getElementById("startAnim");
+    const stopBtn = document.getElementById("stopAnim");
+    const clearBtn = document.getElementById("clearDrones");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const randomizeYawBtn = document.getElementById("randomizeYaw");
+
+    const statusStep = document.getElementById("statusStep");
+    const statusDrones = document.getElementById("statusDrones");
+    const stepProgressInner = document.getElementById("stepProgressInner");
+    const droneListDiv = document.getElementById("droneList");
+    const droneCountPill = document.getElementById("droneCountPill");
+    const userNameSpan = document.getElementById("userName");
+    const userAvatar = document.getElementById("userAvatar");
+
+    const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#a855f7", "#f97316", "#14b8a6", "#e11d48"];
+    let droneColorMap = {};
+
+    // Utils: degrees <-> radians (for drawing only)
+    function degToRad(deg) {
+        return deg * Math.PI / 180;
+    }
+
+    // Set user name in header
+    const storedUser = localStorage.getItem("uav_user") || "admin";
+    userNameSpan.textContent = storedUser;
+    userAvatar.textContent = storedUser.charAt(0).toUpperCase();
+
+    const SCALE = 4;
+    const OFFSET_X = canvas.width / 2;
+    const OFFSET_Y = canvas.height / 2;
+
+    // Each drone: { label, coordinates: {x,y,z,yaw} }
+    let initialDronePositions = [];
+    let responseData = null;
+    let currentStep = 0;
+    let maxSteps = 0;
+    let animInterval = null;
+
+    // Coordinate conversions
+    function toCanvasX(x) {
+        return x * SCALE + OFFSET_X;
+    }
+
+    function toCanvasY(y) {
+        return y * -SCALE + OFFSET_Y;
+    }
+
+    function fromCanvasX(px) {
+        return (px - OFFSET_X) / SCALE;
+    }
+
+    function fromCanvasY(py) {
+        return (py - OFFSET_Y) / -SCALE;
+    }
+
+    function toMiniX(worldX) {
+        return M_CENTER_X + worldX * M_SCALE;
+    }
+
+    function toMiniY(worldY) {
+        return M_CENTER_Y + worldY * -M_SCALE;
+    }
+
+    function drawGrid() {
+        const step = 50;
+        ctx.fillStyle = "#020617";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = "rgba(148,163,184,0.08)";
+        ctx.lineWidth = 1;
+
+        for (let x = 0; x < canvas.width; x += step) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+
+        for (let y = 0; y < canvas.height; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = "rgba(148,163,184,0.35)";
+        ctx.lineWidth = 1.4;
+
+        ctx.beginPath();
+        ctx.moveTo(OFFSET_X, 0);
+        ctx.lineTo(OFFSET_X, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, OFFSET_Y);
+        ctx.lineTo(canvas.width, OFFSET_Y);
+        ctx.stroke();
+    }
+
+    function drawPointWorld(x, y, color, label) {
+        const cx = toCanvasX(x);
+        const cy = toCanvasY(y);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 16;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if (label) {
+            ctx.fillStyle = "#e5e7eb";
+            ctx.font = "11px system-ui";
+            ctx.fillText(label, cx + 8, cy + 3);
+        }
+    }
+
+    function drawBaseRadar(x, y) {
+        const cx = toCanvasX(x);
+        const cy = toCanvasY(y);
+        const radarRange = parseFloat(signalRangeInput.value) || 40;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radarRange * SCALE, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.45)";
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+
+        const gradient = ctx.createRadialGradient(
+            cx, cy, radarRange * SCALE * 0.2,
+            cx, cy, radarRange * SCALE
+        );
+        gradient.addColorStop(0, "rgba(59, 130, 246, 0.15)");
+        gradient.addColorStop(1, "rgba(59, 130, 246, 0)");
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radarRange * SCALE, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radarRange * SCALE * 0.5, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.25)";
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+
+        const time = Date.now() / 1000;
+        const sweepAngle = (time * 4) % (Math.PI * 2);
+        const pulse = 0.7 + 0.3 * Math.sin(time * 8);
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(
+            cx + Math.cos(sweepAngle) * radarRange * SCALE,
+            cy + Math.sin(sweepAngle) * radarRange * SCALE
+        );
+        ctx.strokeStyle = `rgba(59, 130, 246, ${0.6 * pulse})`;
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "#000000";
+        ctx.shadowColor = "#3b82f6";
+        ctx.shadowBlur = 15;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+        ctx.fillStyle = "#3b82f6";
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.18)";
+        ctx.lineWidth = 0.8;
+
+        ctx.beginPath();
+        ctx.moveTo(cx - radarRange * SCALE * 0.4, cy);
+        ctx.lineTo(cx + radarRange * SCALE * 0.4, cy);
+        ctx.moveTo(cx, cy - radarRange * SCALE * 0.4);
+        ctx.lineTo(cx, cy + radarRange * SCALE * 0.4);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx - radarRange * SCALE * 0.28, cy - radarRange * SCALE * 0.28);
+        ctx.lineTo(cx + radarRange * SCALE * 0.28, cy + radarRange * SCALE * 0.28);
+        ctx.moveTo(cx + radarRange * SCALE * 0.28, cy - radarRange * SCALE * 0.28);
+        ctx.lineTo(cx - radarRange * SCALE * 0.28, cy + radarRange * SCALE * 0.28);
+        ctx.stroke();
+    }
+
+    function hexToRgba(hex, alpha = 1) {
+        hex = hex.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // yawDeg is in math/world convention: 0° = +X, CCW to +Y.
+    // For screen we flip sign because Y is inverted.
+    function drawDroneSignal(x, y, yawDeg, color) {
+        const cx = toCanvasX(x);
+        const cy = toCanvasY(y);
+        const signalRange = (parseFloat(signalRangeInput.value) * 0.5) || 25;
+        const signalAngleDeg = parseFloat(signalAngleInput.value) || 60;
+
+        const yaw = -degToRad(yawDeg); // flip for canvas
+        const signalAngle = signalAngleDeg * Math.PI / 180;
+
+        const startAngle = yaw - signalAngle / 2;
+        const endAngle = yaw + signalAngle / 2;
+
+        const gradient = ctx.createRadialGradient(
+            cx + Math.cos(yaw) * signalRange * SCALE * 0.2,
+            cy + Math.sin(yaw) * signalRange * SCALE * 0.2,
+            0,
+            cx + Math.cos(yaw) * signalRange * SCALE * 0.8,
+            cy + Math.sin(yaw) * signalRange * SCALE * 0.8,
+            signalRange * SCALE
+        );
+
+        const rgbaColor = hexToRgba(color, 0.25);
+        const rgbaColorFaint = hexToRgba(color, 0.08);
+        gradient.addColorStop(0, rgbaColor);
+        gradient.addColorStop(0.3, rgbaColorFaint);
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, signalRange * SCALE, startAngle, endAngle);
+        ctx.lineTo(cx, cy);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, signalRange * SCALE, startAngle, endAngle);
+        ctx.strokeStyle = hexToRgba(color, 0.35);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, signalRange * SCALE * 0.6, startAngle, endAngle);
+        ctx.lineTo(cx, cy);
+        ctx.closePath();
+        ctx.fillStyle = hexToRgba(color, 0.18);
+        ctx.fill();
+
+        // direction line
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(
+            cx + Math.cos(yaw) * signalRange * SCALE * 0.85,
+            cy + Math.sin(yaw) * signalRange * SCALE * 0.85
+        );
+        ctx.strokeStyle = hexToRgba(color, 0.6);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // drone body
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+
+        const droneGradient = ctx.createRadialGradient(cx, cy, 1, cx, cy, 10);
+        droneGradient.addColorStop(0, hexToRgba(color, 1));
+        droneGradient.addColorStop(0.7, hexToRgba(color, 0.7));
+        droneGradient.addColorStop(1, hexToRgba(color, 0.3));
+
+        ctx.fillStyle = droneGradient;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 18;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // direction arrow
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(
+            cx + Math.cos(yaw) * 9,
+            cy + Math.sin(yaw) * 9
+        );
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(
+            cx + Math.cos(yaw) * 8,
+            cy + Math.sin(yaw) * 8
+        );
+        ctx.lineTo(
+            cx + Math.cos(yaw - Math.PI / 6) * 5,
+            cy + Math.sin(yaw - Math.PI / 6) * 5
+        );
+        ctx.lineTo(
+            cx + Math.cos(yaw + Math.PI / 6) * 5,
+            cy + Math.sin(yaw + Math.PI / 6) * 5
+        );
+        ctx.closePath();
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        const time = Date.now() / 1000;
+        const pulse = 0.8 + 0.2 * Math.sin(time * 3);
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.7 * pulse;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+
+    function updateStatus() {
+        const dronesCount = initialDronePositions.length || (responseData ? Object.keys(responseData.drone_positions).length : 0);
+        statusStep.textContent = currentStep;
+        statusDrones.textContent = dronesCount;
+        droneCountPill.textContent = `${dronesCount} active`;
+
+        if (maxSteps > 0) {
+            const progress = (currentStep / (maxSteps - 1)) * 100;
+            stepProgressInner.style.width = `${Math.min(Math.max(progress, 0), 100)}%`;
+        } else {
+            stepProgressInner.style.width = "0%";
+        }
+    }
+
+    function updateDroneList() {
+        if (!droneListDiv) return;
+
+        droneListDiv.innerHTML = "";
+        let dronesCount = 0;
+
+        if (responseData && responseData.drone_positions) {
+            const entries = Object.entries(responseData.drone_positions);
+            dronesCount = entries.length;
+            entries.forEach(([label, track], idx) => {
+                const stepIdx = Math.min(currentStep, track.length - 1);
+                const pos = track[stepIdx];
+                const yawDeg = pos.yaw ?? 0;
+
+                const item = document.createElement("div");
+                item.className = "drone-item";
+
+                const header = document.createElement("div");
+                header.className = "drone-item-header";
+
+                const labelSpan = document.createElement("div");
+                labelSpan.className = "drone-label";
+                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${droneColorMap[label]}"></span>${label}`;
+
+                const chip = document.createElement("div");
+                chip.className = "drone-chip";
+                chip.textContent = `step ${stepIdx}`;
+
+                header.appendChild(labelSpan);
+                header.appendChild(chip);
+
+                const meta = document.createElement("div");
+                meta.className = "drone-meta";
+                meta.innerHTML = `
+                <span> x: ${pos.x.toFixed(1)} </span>
+                <span> y: ${pos.y.toFixed(1)} </span>
+                <span> z: ${pos.z.toFixed(1)} </span>
+                <span> yaw: ${yawDeg.toFixed(0)}° </span>
+            `;
+
+                item.appendChild(header);
+                item.appendChild(meta);
+                droneListDiv.appendChild(item);
+            });
+        } else if (initialDronePositions.length > 0) {
+            dronesCount = initialDronePositions.length;
+            initialDronePositions.forEach((d, idx) => {
+                const yawDeg = d.coordinates.yaw ?? 0;
+
+                const item = document.createElement("div");
+                item.className = "drone-item";
+
+                const header = document.createElement("div");
+                header.className = "drone-item-header";
+
+                const labelSpan = document.createElement("div");
+                labelSpan.className = "drone-label";
+                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${droneColorMap[label]}"></span>${d.label}`;
+
+                const chip = document.createElement("div");
+                chip.className = "drone-chip";
+                chip.textContent = "initial";
+
+                header.appendChild(labelSpan);
+                header.appendChild(chip);
+
+                const meta = document.createElement("div");
+                meta.className = "drone-meta";
+                meta.innerHTML = `
+                <span> x: ${d.coordinates.x.toFixed(1)} </span>
+                <span> y: ${d.coordinates.y.toFixed(1)} </span>
+                <span> z: ${d.coordinates.z.toFixed(1)} </span>
+                <span> yaw: ${yawDeg.toFixed(0)}° </span>
+            `;
+
+                item.appendChild(header);
+                item.appendChild(meta);
+                droneListDiv.appendChild(item);
+            });
+        } else {
+            droneListDiv.innerHTML = `
+            <div class="empty-state">
+                Немає дронів. Додай першого кліком по карті.
+            </div>
+        `;
+        }
+
+        droneCountPill.textContent = `${dronesCount} active`;
+    }
+
+    function drawMiniDot(worldX, worldY, color, radius = 3) {
+        const x = toMiniX(worldX);
+        const y = toMiniY(worldY);
+
+        mm.beginPath();
+        mm.arc(x, y, radius, 0, Math.PI * 2);
+        mm.fillStyle = color;
+        mm.shadowColor = color;
+        mm.shadowBlur = 8;
+        mm.fill();
+        mm.shadowBlur = 0;
+    }
+
+    function drawMiniMap() {
+        mm.clearRect(0, 0, minimap.width, minimap.height);
+
+        const grad = mm.createRadialGradient(M_CENTER_X, M_CENTER_Y, 5, M_CENTER_X, M_CENTER_Y, 60);
+        grad.addColorStop(0, "rgba(15,23,42,0.98)");
+        grad.addColorStop(1, "rgba(15,23,42,0.7)");
+        mm.fillStyle = grad;
+        mm.fillRect(0, 0, minimap.width, minimap.height);
+
+        mm.strokeStyle = "rgba(148,163,184,0.35)";
+        mm.lineWidth = 0.8;
+        [25, 40, 55].forEach(r => {
+            mm.beginPath();
+            mm.arc(M_CENTER_X, M_CENTER_Y, r, 0, Math.PI * 2);
+            mm.stroke();
+        });
+
+        mm.strokeStyle = "rgba(148,163,184,0.25)";
+        mm.beginPath();
+        mm.moveTo(M_CENTER_X, 0);
+        mm.lineTo(M_CENTER_X, minimap.height);
+        mm.stroke();
+
+        mm.beginPath();
+        mm.moveTo(0, M_CENTER_Y);
+        mm.lineTo(minimap.width, M_CENTER_Y);
+        mm.stroke();
+
+        let baseX, baseY, userX, userY;
+
+        if (responseData) {
+            baseX = responseData.base_coordinates.x;
+            baseY = responseData.base_coordinates.y;
+            userX = responseData.user_coordinates.x;
+            userY = responseData.user_coordinates.y;
+        } else {
+            baseX = parseFloat(baseXInput.value) || 0;
+            baseY = parseFloat(baseYInput.value) || 0;
+            userX = parseFloat(userXInput.value) || 0;
+            userY = parseFloat(userYInput.value) || 0;
+        }
+
+        drawMiniDot(baseX, baseY, "#000000", 3);
+        drawMiniDot(userX, userY, "#f97316", 3);
+
+        if (responseData && responseData.drone_positions) {
+            let i = 0;
+            for (const [label, track] of Object.entries(responseData.drone_positions)) {
+                const idx = Math.min(currentStep, track.length - 1);
+                const pos = track[idx];
+                drawMiniDot(pos.x, pos.y, droneColorMap[label], 3);
+                i++;
+            }
+        } else if (initialDronePositions.length > 0) {
+            initialDronePositions.forEach((d, idx) => {
+                drawMiniDot(d.coordinates.x, d.coordinates.y, COLORS[idx % COLORS.length], 3);
+            });
+        }
+    }
+
+    function drawFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+
+        const baseX = parseFloat(baseXInput.value) || 0;
+        const baseY = parseFloat(baseYInput.value) || 0;
+        const userX = parseFloat(userXInput.value) || 0;
+        const userY = parseFloat(userYInput.value) || 0;
+
+        drawBaseRadar(baseX, baseY);
+        drawPointWorld(userX, userY, "#f97316", "User");
+
+        if (!responseData) {
+            initialDronePositions.forEach((d, idx) => {
+                const yawDeg = d.coordinates.yaw ?? 0;
+                drawDroneSignal(
+                    d.coordinates.x,
+                    d.coordinates.y,
+                    yawDeg,
+                    COLORS[idx % COLORS.length]
+                );
+                drawPointWorld(d.coordinates.x, d.coordinates.y, COLORS[idx % COLORS.length], d.label);
+            });
+
+            updateStatus();
+            updateDroneList();
+            drawMiniMap();
+            return;
+        }
+
+        let i = 0;
+        for (const [label, track] of Object.entries(responseData.drone_positions)) {
+            const idx = Math.min(currentStep, track.length - 1);
+            const step = track[idx];
+            const yawDeg = step.yaw ?? 0;
+
+            drawDroneSignal(
+                step.x,
+                step.y,
+                yawDeg,
+                droneColorMap[label]
+            );
+
+            drawPointWorld(step.x, step.y, droneColorMap[label], `${label} z=${step.z.toFixed(1)}`);
+            i++;
+        }
+
+        updateStatus();
+        updateDroneList();
+        drawMiniMap();
+    }
+
+    // Canvas click = add drone with random yaw (degrees)
+    canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const px = e.clientX - rect.left;
+        const py = e.clientY - rect.top;
+
+        const worldX = fromCanvasX(px);
+        const worldY = fromCanvasY(py);
+        const defaultZ = 10;
+        const randomYawDeg = Math.random() * 360;
+
+        const label = `UAV${initialDronePositions.length + 1}`;
+
+        if (!droneColorMap[label]) {
+            droneColorMap[label] = COLORS[(initialDronePositions.length) % COLORS.length];
+        }
+        initialDronePositions.push({
+            label,
+            coordinates: {
+                x: worldX,
+                y: worldY,
+                z: defaultZ,
+                yaw: randomYawDeg
+            }
+        });
+
+        responseData = null;
+        currentStep = 0;
+        drawFrame();
+    });
+
+    async function fetchData() {
+        if (initialDronePositions.length === 0) {
+            alert("Сначала добавь хотя бы одного дрона кликнув по карте.");
+            return;
+        }
+
+        const payload = {
+            user: {
+                x: parseFloat(userXInput.value) || 0,
+                y: parseFloat(userYInput.value) || 0
+            },
+            base: {
+                x: parseFloat(baseXInput.value) || 0,
+                y: parseFloat(baseYInput.value) || 0,
+                z: parseFloat(baseZInput.value) || 0
+            },
+            step_size: parseFloat(stepInput.value) || 3,
+            initial_drone_positions: initialDronePositions.map(drone => ({
+                label: drone.label,
+                coordinates: {
+                    x: drone.coordinates.x,
+                    y: drone.coordinates.y,
+                    z: drone.coordinates.z,
+                    yaw: drone.coordinates.yaw ?? 0 // degrees
+                },
+            }))
+        };
+
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                alert("Ошибка ответа сервера: " + res.status);
+                return;
+            }
+
+            responseData = await res.json();
+
+            for (const label of Object.keys(responseData.drone_positions)) {
+                if (!droneColorMap[label]) {
+                    const index = Object.keys(droneColorMap).length;
+                    droneColorMap[label] = COLORS[index % COLORS.length];
+                }
+            }
+
+            if (responseData.drone_positions) {
+                Object.entries(responseData.drone_positions).forEach(([label, track]) => {
+                    track.forEach(step => {
+                        if (step.yaw === undefined || step.yaw === null) {
+                            const initialDrone = initialDronePositions.find(d => d.label === label);
+                            step.yaw = initialDrone ? (initialDrone.coordinates.yaw ?? 0) : 0;
+                        } else {
+                            step.yaw = ((step.yaw % 360) + 360) % 360;
+                        }
+                    });
+                });
+            }
+
+            maxSteps = Math.max(...Object.values(responseData.drone_positions).map(a => a.length));
+            currentStep = 0;
+            drawFrame();
+        } catch (e) {
+            console.error("Fetch error:", e);
+            alert("Не удалось обратиться к backend. Проверь, что FastAPI запущен.");
+        }
+    }
+
+    // Randomize yaw (degrees) in initial positions
+    randomizeYawBtn.onclick = () => {
+        if (initialDronePositions.length === 0) {
+            alert("Немає дронів для рандомізації.");
+            return;
+        }
+
+        initialDronePositions.forEach(drone => {
+            drone.coordinates.yaw = Math.random() * 360;
+        });
+
+        responseData = null;
+        currentStep = 0;
+        drawFrame();
+    };
+
+    // Buttons
+    recalcBtn.onclick = () => fetchData();
+
+    prevBtn.onclick = () => {
+        if (!responseData) return;
+        currentStep = Math.max(0, currentStep - 1);
+        drawFrame();
+    };
+
+    nextBtn.onclick = () => {
+        if (!responseData) return;
+        currentStep = Math.min(maxSteps - 1, currentStep + 1);
+        drawFrame();
+    };
+
+    startBtn.onclick = () => {
+        if (!responseData || animInterval) return;
+        animInterval = setInterval(() => {
+            currentStep++;
+            if (currentStep >= maxSteps) currentStep = 0;
+            drawFrame();
+        }, 300);
+    };
+
+    stopBtn.onclick = () => {
+        if (animInterval) {
+            clearInterval(animInterval);
+            animInterval = null;
+        }
+    };
+
+    clearBtn.onclick = () => {
+        initialDronePositions = [];
+        responseData = null;
+        currentStep = 0;
+        maxSteps = 0;
+        drawFrame();
+    };
+
+    logoutBtn.onclick = () => {
+        localStorage.removeItem("uav_user");
+        window.location.href = "login.html";
+    };
+
+    signalRangeInput.addEventListener('input', drawFrame);
+    signalAngleInput.addEventListener('input', drawFrame);
+
+    // Main animation loop (for radar, pulses, etc.)
+    function animate() {
+        drawFrame();
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+
+</body>
+</html>

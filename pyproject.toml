@@ -15,6 +15,7 @@ fastapi = {extras = ["all"], version = "^0.120.4"}
 uvicorn = {extras = ["standard"], version = "^0.38.0"}
 pydantic = {extras = ["mypy"], version = "^2.11.9"}
 pydantic-settings = "^2.11.0"
+numpy = "^2.3.4"
 
 [tool.poetry.group.lint.dependencies]
 mypy = "^1.18.2"

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | UAV Swarm</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: white;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            width: 360px;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.25);
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0 0 20px;
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 14px;
+        }
+
+        label {
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #cbd5e1;
+        }
+
+        input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            background: #22c55e;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        a { color: #60a5fa; }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <h1>Create account</h1>
+
+    <div class="field">
+        <label>Name</label>
+        <input id="name" type="text" placeholder="Your name">
+    </div>
+
+    <div class="field">
+        <label>Email</label>
+        <input id="email" type="email" placeholder="you@example.com">
+    </div>
+
+    <div class="field">
+        <label>Password</label>
+        <input id="password" type="password" placeholder="••••••••">
+    </div>
+
+    <div class="field">
+        <label>Repeat password</label>
+        <input id="password2" type="password" placeholder="••••••••">
+    </div>
+
+    <button id="regBtn">Register</button>
+
+    <div class="link">
+        Already have an account? <a href="login.html">Login</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById("regBtn").onclick = () => {
+        const name  = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const pass1 = document.getElementById("password").value;
+        const pass2 = document.getElementById("password2").value;
+
+        if (!name || !email || !pass1 || !pass2) {
+            alert("Заполни все поля");
+            return;
+        }
+
+        if (pass1 !== pass2) {
+            alert("Пароли не совпадают");
+            return;
+        }
+
+        alert("Аккаунт создан 🎉");
+        window.location.href = "login.html";
+    };
+</script>
+
+</body>
+</html>
