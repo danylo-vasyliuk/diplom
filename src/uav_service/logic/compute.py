@@ -1,3 +1,5 @@
+from math import ceil
+
 import numpy as np
 
 from uav_service.logic.models import Coordinates, Coordinates3D, Drone
@@ -8,54 +10,71 @@ def compute_drone_positions(
     user_coordinates: Coordinates,
     base_coordinates: Coordinates3D,
     drones: list[Drone],
-    num_to_use: int = 3,
-) -> list[Drone]:
+    num_to_use: int,
+    step_size: float = 5.0,
+) -> dict[str, list[Coordinates3D]]:
     """
-    Use DH parameters to compute drone positions forming a Wi-Fi chain.
+    Computes DH-based drone steps.
+    Returns:
+        {
+            "UAV_1": [Coordinates3D, ...],
+            "UAV_2": [...],
+            ...
+        }
     """
-    if num_to_use > len(drones):
-        raise ValueError(
-            "num_drones_to_use cannot exceed total number of drones available"
-        )
 
-    # Use the first N drones
+    if num_to_use > len(drones):
+        raise ValueError("num_to_use cannot exceed available drone count")
+
     selected = drones[:num_to_use]
 
-    # Compute direction from base to user
-    dx, dy = (
-        user_coordinates.x - base_coordinates.x,
-        user_coordinates.y - base_coordinates.y,
+    # Destination: x, y from user; z from base height
+    target = np.array(
+        [
+            user_coordinates.x,
+            user_coordinates.y,
+            base_coordinates.z,
+        ],
+        dtype=float,
     )
-    total_dist = np.sqrt(dx**2 + dy**2)
-    theta = np.arctan2(dy, dx)
 
-    # Parameters for DH model
-    link_length = total_dist / (num_to_use + 1)
-    alpha = np.deg2rad(5)  # small upward angle
-    d = 10  # vertical offset
+    result: dict[str, list[Coordinates3D]] = {}
 
-    # Start at base
-    T = np.eye(4)
-    T[:3, 3] = np.array([base_coordinates.x, base_coordinates.y, base_coordinates.z])
+    for drone in selected:
+        steps: list[Coordinates3D] = [drone.coordinates]
 
-    result = []
-
-    for i, drone in enumerate(selected, start=1):
-        T_i = dh_transform(theta, d, link_length, alpha)
-        T = T @ T_i
-
-        # Combine with small adjustment based on initial drone position
-        offset = (
-            np.array([drone.coordinates.x, drone.coordinates.y, drone.coordinates.z])
-            * 0.03
+        start = np.array(
+            [
+                drone.coordinates.x,
+                drone.coordinates.y,
+                drone.coordinates.z,
+            ],
+            dtype=float,
         )
-        pos = T[:3, 3] + offset
 
-        result.append(
-            Drone(
-                label=drone.label,
-                coordinates=Coordinates3D(x=pos[0], y=pos[1], z=pos[2]),
-            )
-        )
+        # Compute distance and independent number of steps
+        distance = np.linalg.norm(target - start)
+        steps_per_drone = max(2, ceil(distance / step_size))
+
+        for step in range(steps_per_drone + 1):
+            t = step / steps_per_drone
+
+            # Linear interpolation between start and target
+            pos = start * (1 - t) + target * t
+
+            # Map interpolated XYZ into DH parameters
+            a = pos[0]
+            theta = np.deg2rad(pos[1]) / 5  # scaled rotation
+            d = pos[2]
+            alpha = np.deg2rad(5)
+
+            T = dh_transform(theta, d, a, alpha)
+
+            # Extract transformed coordinates
+            x, y, z = T[0, 3], T[1, 3], T[2, 3]
+
+            steps.append(Coordinates3D(x=x, y=y, z=z))
+
+        result[drone.label] = steps
 
     return result

@@ -12,18 +12,25 @@ async def start(
     *,
     request_data: UavComputeRequest,
 ) -> UavComputeResponse:
-    base_coordinates = Coordinates3D(x=0, y=0, z=0)
-    initial_drones = [
+    base = Coordinates3D(x=0, y=0, z=0)
+    initial_drone_positions = [
         Drone(label="UAV_1", coordinates=Coordinates3D(x=10, y=5, z=10)),
         Drone(label="UAV_2", coordinates=Coordinates3D(x=20, y=10, z=12)),
         Drone(label="UAV_3", coordinates=Coordinates3D(x=30, y=15, z=15)),
         Drone(label="UAV_4", coordinates=Coordinates3D(x=40, y=20, z=17)),
         Drone(label="UAV_5", coordinates=Coordinates3D(x=50, y=25, z=18)),
     ]
-    computed_drones = compute_drone_positions(
+    base_coordinates = request_data.base or base
+    drones = request_data.initial_drone_positions or initial_drone_positions
+
+    drone_positions = compute_drone_positions(
         user_coordinates=request_data.user,
-        base_coordinates=base_coordinates,
-        drones=initial_drones,
+        base_coordinates=base,
+        drones=drones,
         num_to_use=3,
     )
-    return UavComputeResponse(drones=computed_drones)
+    return UavComputeResponse(
+        base_coordinates=base_coordinates,
+        user_coordinates=request_data.user,
+        drone_positions=drone_positions,
+    )
