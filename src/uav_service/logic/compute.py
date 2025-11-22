@@ -6,20 +6,24 @@ from uav_service.logic.models import Coordinates, Coordinates3D, Drone
 from uav_service.logic.utils import dh_transform
 
 
+import numpy as np
+from math import ceil
+
+
 def compute_drone_positions(
     user_coordinates: Coordinates,
     base_coordinates: Coordinates3D,
     drones: list[Drone],
-    max_drone_spacing: float = 10.0,  # maximum distance between drones
+    max_drone_spacing: float = 10.0,
     step_size: float = 1.0,
 ) -> dict[str, list[Coordinates3D]]:
     """
     Computes DH-based drone steps forming a bridge between base and user.
-    Number of drones is automatically calculated based on distance and max_drone_spacing.
+    Drones are assigned to target positions optimally based on distance.
+    Number of drones is calculated automatically.
     Returns:
         {
-            "UAV_1": [Coordinates3D, ...],
-            "UAV_2": [...],
+            "UAV_label": [Coordinates3D, ...],
             ...
         }
     """
@@ -31,31 +35,44 @@ def compute_drone_positions(
         [user_coordinates.x, user_coordinates.y, base_coordinates.z], dtype=float
     )
 
-    # Calculate total distance
+    # Calculate total distance and number of drones needed
     total_distance = np.linalg.norm(user - base)
-
-    # Calculate number of drones needed
     num_to_use = ceil(total_distance / max_drone_spacing)
     num_to_use = min(num_to_use, len(drones))
     num_to_use = max(1, num_to_use)
 
-    selected = drones[:num_to_use]
+    # Compute evenly spaced target positions along the line
+    targets = [
+        base * (1 - (i / (num_to_use + 1))) + user * (i / (num_to_use + 1))
+        for i in range(1, num_to_use + 1)
+    ]
 
-    # Compute evenly spaced target positions along the line base → user
-    targets = []
-    for i in range(1, num_to_use + 1):
-        t = i / (num_to_use + 1)
-        pos = base * (1 - t) + user * t
-        targets.append(pos)
+    # Greedy assignment: assign closest drone to each target
+    remaining_drones = drones.copy()
+    assignments = []
 
+    for target in targets:
+        # Find the closest drone to this target
+        distances = [
+            np.linalg.norm(
+                np.array(
+                    [d.coordinates.x, d.coordinates.y, d.coordinates.z], dtype=float
+                )
+                - target
+            )
+            for d in remaining_drones
+        ]
+        idx = int(np.argmin(distances))
+        drone = remaining_drones.pop(idx)
+        assignments.append((drone, target))
+
+    # Compute steps for each assigned drone
     result: dict[str, list[Coordinates3D]] = {}
 
-    for drone, target in zip(selected, targets):
+    for drone, target in assignments:
         start = np.array(
             [drone.coordinates.x, drone.coordinates.y, drone.coordinates.z], dtype=float
         )
-
-        # Compute distance and independent number of steps
         distance = np.linalg.norm(target - start)
         steps_per_drone = max(2, ceil(distance / step_size))
 
@@ -63,16 +80,13 @@ def compute_drone_positions(
 
         for step in range(1, steps_per_drone + 1):
             t = step / steps_per_drone
-
-            # Linear interpolation toward the drone's target
             pos = start * (1 - t) + target * t
 
-            # Map XYZ into DH parameters
+            # DH transform
             a = pos[0]
             theta = np.deg2rad(pos[1]) / 5
             d = pos[2]
             alpha = np.deg2rad(5)
-
             T = dh_transform(theta, d, a, alpha)
             x, y, z = T[0, 3], T[1, 3], T[2, 3]
 
