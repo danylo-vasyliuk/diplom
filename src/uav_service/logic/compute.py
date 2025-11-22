@@ -11,10 +11,11 @@ def compute_drone_positions(
     base_coordinates: Coordinates3D,
     drones: list[Drone],
     num_to_use: int,
-    step_size: float = 5.0,
+    step_size: float = 1.0,
 ) -> dict[str, list[Coordinates3D]]:
     """
-    Computes DH-based drone steps.
+    Computes DH-based drone steps forming a bridge between base and user.
+    Each drone is spaced equally along the line.
     Returns:
         {
             "UAV_1": [Coordinates3D, ...],
@@ -28,52 +29,50 @@ def compute_drone_positions(
 
     selected = drones[:num_to_use]
 
-    # Destination: x, y from user; z from base height
-    target = np.array(
-        [
-            user_coordinates.x,
-            user_coordinates.y,
-            base_coordinates.z,
-        ],
-        dtype=float,
+    base = np.array(
+        [base_coordinates.x, base_coordinates.y, base_coordinates.z], dtype=float
     )
+    user = np.array(
+        [user_coordinates.x, user_coordinates.y, base_coordinates.z], dtype=float
+    )
+
+    # Compute final target positions for each drone (equally spaced)
+    targets = []
+    for i in range(1, num_to_use + 1):
+        t = i / (num_to_use + 1)  # fraction along base → user
+        pos = base * (1 - t) + user * t
+        targets.append(pos)
 
     result: dict[str, list[Coordinates3D]] = {}
 
-    for drone in selected:
-        steps: list[Coordinates3D] = [drone.coordinates]
-
+    for drone, target in zip(selected, targets):
         start = np.array(
-            [
-                drone.coordinates.x,
-                drone.coordinates.y,
-                drone.coordinates.z,
-            ],
-            dtype=float,
+            [drone.coordinates.x, drone.coordinates.y, drone.coordinates.z], dtype=float
         )
 
         # Compute distance and independent number of steps
         distance = np.linalg.norm(target - start)
         steps_per_drone = max(2, ceil(distance / step_size))
 
-        for step in range(steps_per_drone + 1):
+        steps: list[Coordinates3D] = [drone.coordinates]  # step 0 = start
+
+        for step in range(1, steps_per_drone + 1):
             t = step / steps_per_drone
 
-            # Linear interpolation between start and target
+            # Linear interpolation toward the drone's target
             pos = start * (1 - t) + target * t
 
-            # Map interpolated XYZ into DH parameters
+            # Map XYZ into DH parameters
             a = pos[0]
-            theta = np.deg2rad(pos[1]) / 5  # scaled rotation
+            theta = np.deg2rad(pos[1]) / 5
             d = pos[2]
             alpha = np.deg2rad(5)
 
             T = dh_transform(theta, d, a, alpha)
 
-            # Extract transformed coordinates
             x, y, z = T[0, 3], T[1, 3], T[2, 3]
 
-            steps.append(Coordinates3D(x=x, y=y, z=z))
+            steps.append(Coordinates3D(x=float(x), y=float(y), z=float(z)))
 
         result[drone.label] = steps
 
