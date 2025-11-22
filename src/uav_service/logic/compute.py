@@ -10,12 +10,12 @@ def compute_drone_positions(
     user_coordinates: Coordinates,
     base_coordinates: Coordinates3D,
     drones: list[Drone],
-    num_to_use: int,
+    max_drone_spacing: float = 10.0,  # maximum distance between drones
     step_size: float = 1.0,
 ) -> dict[str, list[Coordinates3D]]:
     """
     Computes DH-based drone steps forming a bridge between base and user.
-    Each drone is spaced equally along the line.
+    Number of drones is automatically calculated based on distance and max_drone_spacing.
     Returns:
         {
             "UAV_1": [Coordinates3D, ...],
@@ -24,11 +24,6 @@ def compute_drone_positions(
         }
     """
 
-    if num_to_use > len(drones):
-        raise ValueError("num_to_use cannot exceed available drone count")
-
-    selected = drones[:num_to_use]
-
     base = np.array(
         [base_coordinates.x, base_coordinates.y, base_coordinates.z], dtype=float
     )
@@ -36,10 +31,20 @@ def compute_drone_positions(
         [user_coordinates.x, user_coordinates.y, base_coordinates.z], dtype=float
     )
 
-    # Compute final target positions for each drone (equally spaced)
+    # Calculate total distance
+    total_distance = np.linalg.norm(user - base)
+
+    # Calculate number of drones needed
+    num_to_use = ceil(total_distance / max_drone_spacing)
+    num_to_use = min(num_to_use, len(drones))
+    num_to_use = max(1, num_to_use)
+
+    selected = drones[:num_to_use]
+
+    # Compute evenly spaced target positions along the line base → user
     targets = []
     for i in range(1, num_to_use + 1):
-        t = i / (num_to_use + 1)  # fraction along base → user
+        t = i / (num_to_use + 1)
         pos = base * (1 - t) + user * t
         targets.append(pos)
 
@@ -69,7 +74,6 @@ def compute_drone_positions(
             alpha = np.deg2rad(5)
 
             T = dh_transform(theta, d, a, alpha)
-
             x, y, z = T[0, 3], T[1, 3], T[2, 3]
 
             steps.append(Coordinates3D(x=float(x), y=float(y), z=float(z)))

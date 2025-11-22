@@ -27,7 +27,7 @@ async def start(
         user_coordinates=request_data.user,
         base_coordinates=base,
         drones=drones,
-        num_to_use=3,
+        step_size=request_data.step_size,
     )
     return UavComputeResponse(
         base_coordinates=base_coordinates,

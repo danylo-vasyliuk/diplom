@@ -7,6 +7,7 @@ class UavComputeRequest(BaseModel):
     user: Coordinates
     base: Coordinates3D | None = None
     initial_drone_positions: list[Drone] | None = None
+    step_size: float = 3.0
 
 
 class UavComputeResponse(BaseModel):
