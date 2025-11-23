@@ -10,87 +10,91 @@ import numpy as np
 from math import ceil
 
 
+import numpy as np
+from math import ceil
+
+
+import numpy as np
+from math import ceil
+
+
 def compute_drone_positions(
     user_coordinates: Coordinates,
     base_coordinates: Coordinates3D,
     drones: list[Drone],
-    max_drone_spacing: float = 10.0,
+    max_drone_spacing: float = 7.0,
     step_size: float = 1.0,
 ) -> dict[str, list[Coordinates3D]]:
     """
-    Computes DH-based drone steps forming a bridge between base and user.
-    Drones are assigned to target positions optimally based on distance.
-    Number of drones is calculated automatically.
-    Returns:
-        {
-            "UAV_label": [Coordinates3D, ...],
-            ...
-        }
+    Build a drone bridge between base and user.
+    Each drone flies ONLY to its assigned bridge point, not to the user.
+    DH transform affects orientation only, not translation.
     """
 
-    base = np.array(
-        [base_coordinates.x, base_coordinates.y, base_coordinates.z], dtype=float
-    )
-    user = np.array(
-        [user_coordinates.x, user_coordinates.y, base_coordinates.z], dtype=float
-    )
+    base = np.array([base_coordinates.x, base_coordinates.y, base_coordinates.z], float)
+    user = np.array([user_coordinates.x, user_coordinates.y, base_coordinates.z], float)
 
-    # Calculate total distance and number of drones needed
+    # --- 1) Compute required number of drones for spacing limit ---
     total_distance = np.linalg.norm(user - base)
-    num_to_use = ceil(total_distance / max_drone_spacing)
-    num_to_use = min(num_to_use, len(drones))
-    num_to_use = max(1, num_to_use)
+    num_required = ceil(total_distance / max_drone_spacing)
 
-    # Compute evenly spaced target positions along the line
-    targets = [
-        base * (1 - (i / (num_to_use + 1))) + user * (i / (num_to_use + 1))
-        for i in range(1, num_to_use + 1)
-    ]
+    num_to_use = min(max(1, num_required), len(drones))
 
-    # Greedy assignment: assign closest drone to each target
-    remaining_drones = drones.copy()
+    # --- 2) Compute bridge points (not including base and user) ---
+    targets = []
+    for i in range(1, num_to_use + 1):
+        t = i / (num_to_use + 1)
+        pos = base * (1 - t) + user * t
+        targets.append(pos)
+
+    # --- 3) Assign closest drones to closest targets ---
+    remaining = drones.copy()
     assignments = []
 
     for target in targets:
-        # Find the closest drone to this target
-        distances = [
+        dists = [
             np.linalg.norm(
-                np.array(
-                    [d.coordinates.x, d.coordinates.y, d.coordinates.z], dtype=float
-                )
-                - target
+                np.array([d.coordinates.x, d.coordinates.y, d.coordinates.z]) - target
             )
-            for d in remaining_drones
+            for d in remaining
         ]
-        idx = int(np.argmin(distances))
-        drone = remaining_drones.pop(idx)
-        assignments.append((drone, target))
+        idx = int(np.argmin(dists))
+        assignments.append((remaining.pop(idx), target))
 
-    # Compute steps for each assigned drone
+    # --- 4) Fly each drone independently to its target ---
     result: dict[str, list[Coordinates3D]] = {}
 
     for drone, target in assignments:
         start = np.array(
-            [drone.coordinates.x, drone.coordinates.y, drone.coordinates.z], dtype=float
+            [drone.coordinates.x, drone.coordinates.y, drone.coordinates.z], float
         )
+
         distance = np.linalg.norm(target - start)
         steps_per_drone = max(2, ceil(distance / step_size))
 
-        steps: list[Coordinates3D] = [drone.coordinates]  # step 0 = start
+        steps: list[Coordinates3D] = [drone.coordinates]
 
         for step in range(1, steps_per_drone + 1):
             t = step / steps_per_drone
-            pos = start * (1 - t) + target * t
+            pos = start * (1 - t) + target * t  # <-- real bridge position
 
-            # DH transform
-            a = pos[0]
-            theta = np.deg2rad(pos[1]) / 5
-            d = pos[2]
-            alpha = np.deg2rad(5)
+            # DH should NOT move the drone, only rotate
+            theta = np.deg2rad(3)  # small rotation
+            alpha = np.deg2rad(0)
+            a = 0
+            d = 0
+
             T = dh_transform(theta, d, a, alpha)
-            x, y, z = T[0, 3], T[1, 3], T[2, 3]
 
-            steps.append(Coordinates3D(x=float(x), y=float(y), z=float(z)))
+            # apply small orientation to the position vector
+            pos_h = np.array([pos[0], pos[1], pos[2], 1])
+            oriented = T @ pos_h
+
+            x = float(oriented[0])
+            y = float(oriented[1])
+            z = float(pos[2])  # maintain correct height
+
+            steps.append(Coordinates3D(x=x, y=y, z=z))
 
         result[drone.label] = steps
 

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>UAV Swarm Interface</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: #0f172a;
+            color: #fff;
+            font-family: system-ui, sans-serif;
+        }
+
+        /* ----- SIDEBAR ----- */
+
+        .sidebar {
+            width: 320px;               /* фіксована ширина */
+            min-width: 320px;
+            max-width: 320px;
+
+            background: #0f172a;
+            padding: 20px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 22px;
+        }
+
+        /* ----- GRID OF TWO INPUTS (X/Y) ----- */
+
+        .field-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field label {
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #cbd5e1;
+        }
+
+        .field input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 8px;
+            color: #fff;
+            width: 100%;            /* <-- ВАЖЛИВО! НЕ ДАЄ ВИЛАЗИТИ */
+            box-sizing: border-box;
+        }
+
+        /* ----- BUTTONS ----- */
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        button {
+            background: #334155;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+        }
+
+        button.primary {
+            background: #3b82f6;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        /* ----- MAIN (CANVAS AREA) ----- */
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            padding-left: 0;
+            box-sizing: border-box;
+            background: #f1f5f9;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            padding: 10px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        #canvas {
+            width: 900px;
+            height: 600px;
+            display: block;
+            margin: auto;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #0f172a;
+        }
+
+
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div>
+        <div class="title">UAV Swarm</div>
+        <div class="subtitle">Проста та красива візуалізація</div>
+    </div>
+
+    <div class="card">
+        <div class="group-label">Базова станція</div>
+        <div class="field-row">
+            <div class="field">
+                <label>Base X</label>
+                <input id="baseX" type="number" value="0">
+            </div>
+            <div class="field">
+                <label>Base Y</label>
+                <input id="baseY" type="number" value="0">
+            </div>
+        </div>
+        <div class="field" style="margin-top:10px;">
+            <label>Base Z</label>
+            <input id="baseZ" type="number" value="0">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="group-label">User</div>
+        <div class="field-row">
+            <div class="field">
+                <label>User X</label>
+                <input id="userX" type="number" value="60">
+            </div>
+            <div class="field">
+                <label>User Y</label>
+                <input id="userY" type="number" value="70">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="group-label">Параметри</div>
+        <div class="field">
+            <label>Step size</label>
+            <input id="stepSize" type="number" step="0.1" value="3">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="group-label">Управління</div>
+        <div class="button-row">
+            <button class="primary" id="recalcBtn">Перерахувати</button>
+            <button id="prevStep">← Назад</button>
+            <button id="nextStep">Вперед →</button>
+            <button id="startAnim">▶ Старт</button>
+            <button id="stopAnim">⏸ Стоп</button>
+        </div>
+        <div style="margin-top:8px; font-size:12px; color:#cbd5e1;">
+            Клікніть по карті, щоби додати нового дрона.
+        </div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="canvas-container">
+        <canvas id="canvas" width="900" height="600"></canvas>
+    </div>
+    <div class="status" id="status">Шаг: 0 | Дронов: 0</div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8000/api/uav-service/uav/compute/";
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const baseXInput = document.getElementById("baseX");
+    const baseYInput = document.getElementById("baseY");
+    const baseZInput = document.getElementById("baseZ");
+    const userXInput = document.getElementById("userX");
+    const userYInput = document.getElementById("userY");
+    const stepInput  = document.getElementById("stepSize");
+
+    const recalcBtn  = document.getElementById("recalcBtn");
+    const prevBtn    = document.getElementById("prevStep");
+    const nextBtn    = document.getElementById("nextStep");
+    const startBtn   = document.getElementById("startAnim");
+    const stopBtn    = document.getElementById("stopAnim");
+    const statusDiv  = document.getElementById("status");
+
+    const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#a855f7", "#f97316", "#14b8a6", "#e11d48"];
+
+    // масштаб и смещение (центр холста — (0,0))
+    const SCALE = 4;
+    const OFFSET_X = canvas.width / 2;
+    const OFFSET_Y = canvas.height / 2;
+
+    function toCanvasX(x) { return x * SCALE + OFFSET_X; }
+    function toCanvasY(y) { return y * SCALE + OFFSET_Y; }
+    function fromCanvasX(px) { return (px - OFFSET_X) / SCALE; }
+    function fromCanvasY(py) { return (py - OFFSET_Y) / SCALE; }
+
+    let initialDronePositions = []; // [{ label, coordinates: {x,y,z} }, ...]
+    let responseData = null;
+    let currentStep = 0;
+    let maxSteps = 0;
+    let animInterval = null;
+
+    function drawPointWorld(x, y, color, label) {
+        const cx = toCanvasX(x);
+        const cy = toCanvasY(y);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        if (label) {
+            ctx.fillStyle = "#111827";
+            ctx.font = "12px system-ui";
+            ctx.fillText(label, cx + 8, cy);
+        }
+    }
+
+    function drawFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        if (!responseData) {
+            // просто отрисуем базу, юзера и стартовые дроны, если маршрут ещё не считали
+            const baseX = parseFloat(baseXInput.value) || 0;
+            const baseY = parseFloat(baseYInput.value) || 0;
+            const userX = parseFloat(userXInput.value) || 0;
+            const userY = parseFloat(userYInput.value) || 0;
+
+            drawPointWorld(baseX, baseY, "#000000", "Base");
+            drawPointWorld(userX, userY, "#f97316", "User");
+
+            initialDronePositions.forEach((d, idx) => {
+                drawPointWorld(d.coordinates.x, d.coordinates.y, COLORS[idx % COLORS.length], d.label);
+            });
+
+            updateStatus();
+            return;
+        }
+
+        // база и пользователь
+        const base = responseData.base_coordinates;
+        drawPointWorld(base.x, base.y, "#000000", "Base");
+
+        const user = responseData.user_coordinates;
+        drawPointWorld(user.x, user.y, "#f97316", "User");
+
+        // дроны на текущем шаге
+        let i = 0;
+        for (const [label, track] of Object.entries(responseData.drone_positions)) {
+            const idx = Math.min(currentStep, track.length - 1);
+            const step = track[idx];
+            drawPointWorld(step.x, step.y, COLORS[i % COLORS.length], `${label} z=${step.z.toFixed(1)}`);
+            i++;
+        }
+
+        updateStatus();
+    }
+
+    function drawGrid() {
+      const step = 50; // каждые 50px
+      ctx.strokeStyle = "rgba(0,0,0,0.05)";
+      ctx.lineWidth = 1;
+
+      // вертикальные линии
+      for (let x = 0; x < canvas.width; x += step) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+      }
+
+      // горизонтальные линии
+      for (let y = 0; y < canvas.height; y += step) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+      }
+
+      // Ось X и Y в центре
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.lineWidth = 1.5;
+
+      // Ось Y
+      ctx.beginPath();
+      ctx.moveTo(OFFSET_X, 0);
+      ctx.lineTo(OFFSET_X, canvas.height);
+      ctx.stroke();
+
+      // Ось X
+      ctx.beginPath();
+      ctx.moveTo(0, OFFSET_Y);
+      ctx.lineTo(canvas.width, OFFSET_Y);
+      ctx.stroke();
+  }
+
+
+    function updateStatus() {
+        const dronesCount = initialDronePositions.length || (responseData ? Object.keys(responseData.drone_positions).length : 0);
+        statusDiv.innerHTML = `<span>Шаг: ${currentStep}</span><span>Дронов: ${dronesCount}</span>`;
+    }
+
+    async function fetchData() {
+        if (initialDronePositions.length === 0) {
+            alert("Сначала добавь хотя бы один дрон кликом по карте.");
+            return;
+        }
+
+        const payload = {
+            user: {
+                x: parseFloat(userXInput.value) || 0,
+                y: parseFloat(userYInput.value) || 0
+            },
+            base: {
+                x: parseFloat(baseXInput.value) || 0,
+                y: parseFloat(baseYInput.value) || 0,
+                z: parseFloat(baseZInput.value) || 0
+            },
+            step_size: parseFloat(stepInput.value) || 3,
+            initial_drone_positions: initialDronePositions
+        };
+
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                console.error("Backend error:", res.status);
+                alert("Ошибка ответа сервера: " + res.status);
+                return;
+            }
+
+            responseData = await res.json();
+            maxSteps = Math.max(...Object.values(responseData.drone_positions).map(a => a.length));
+            currentStep = 0;
+            drawFrame();
+        } catch (e) {
+            console.error("Fetch error:", e);
+            alert("Не удалось обратиться к backend. Проверь, что FastAPI запущен.");
+        }
+    }
+
+    // обработчик клика по карте — создаём новый дрон
+    canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const px = e.clientX - rect.left;
+        const py = e.clientY - rect.top;
+
+        const worldX = fromCanvasX(px);
+        const worldY = fromCanvasY(py);
+        const defaultZ = 10;
+
+        const label = `UAV${initialDronePositions.length + 1}`;
+        initialDronePositions.push({
+            label,
+            coordinates: { x: worldX, y: worldY, z: defaultZ }
+        });
+
+        // сбрасываем маршрут, так как стартовые условия изменились
+        responseData = null;
+        currentStep = 0;
+        drawFrame();
+    });
+
+    // кнопки
+    recalcBtn.onclick = () => {
+        fetchData();
+    };
+
+    prevBtn.onclick = () => {
+        if (!responseData) return;
+        currentStep = Math.max(0, currentStep - 1);
+        drawFrame();
+    };
+
+    nextBtn.onclick = () => {
+        if (!responseData) return;
+        currentStep = Math.min(maxSteps - 1, currentStep + 1);
+        drawFrame();
+    };
+
+    startBtn.onclick = () => {
+        if (!responseData || animInterval) return;
+        animInterval = setInterval(() => {
+            currentStep++;
+            if (currentStep >= maxSteps) currentStep = 0;
+            drawFrame();
+        }, 300);
+    };
+
+    stopBtn.onclick = () => {
+        if (animInterval) {
+            clearInterval(animInterval);
+            animInterval = null;
+        }
+    };
+
+    // первый рендер — просто база + юзер
+    drawFrame();
+</script>
+
+</body>
+</html>
