@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | UAV Swarm</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: white;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            width: 340px;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.25);
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0 0 20px;
+            font-size: 26px;
+            font-weight: bold;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 16px;
+        }
+
+        label {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+        }
+
+        input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            background: #3b82f6;
+            border: none;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .link {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        a {
+            color: #60a5fa;
+        }
+
+        /* ERROR TEXT */
+        .error {
+            background: #7f1d1d;
+            border: 1px solid #b91c1c;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            text-align: center;
+            color: #fecaca;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <h1>Login</h1>
+
+    <div id="errorBox" class="error">Неправильний логін або пароль</div>
+
+    <div class="field">
+        <label>Login</label>
+        <input id="email" type="text" placeholder="admin">
+    </div>
+
+    <div class="field">
+        <label>Password</label>
+        <input id="password" type="password" placeholder="admin">
+    </div>
+
+    <button id="loginBtn">Sign in</button>
+
+    <div class="link">
+        No account? <a href="register.html">Register</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById("loginBtn").onclick = () => {
+        const email = document.getElementById("email").value.trim();
+        const pass  = document.getElementById("password").value.trim();
+        const errorBox = document.getElementById("errorBox");
+
+        // MOCK LOGIN: тільки admin / admin
+        if (email !== "admin" || pass !== "admin") {
+            errorBox.style.display = "block";
+            return;
+        }
+
+        // Якщо все правильно — ховаємо помилку і логінимось
+        errorBox.style.display = "none";
+
+        // Записуємо в localStorage
+        localStorage.setItem("uav_user", "admin");
+
+        // Переходимо в основний інтерфейс
+        window.location.href = "index.html";
+    };
+</script>
+
+</body>
+</html>

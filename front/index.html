@@ -4,53 +4,206 @@
     <meta charset="UTF-8" />
     <title>UAV Swarm Interface</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            background: #0f172a;
-            color: #fff;
-            font-family: system-ui, sans-serif;
+        :root {
+            --bg-dark: #020617;
+            --bg-sidebar: #020617;
+            --bg-card: #0f172a;
+            --bg-card-soft: #020617;
+            --accent: #3b82f6;
+            --accent-soft: rgba(59, 130, 246, 0.14);
+            --border-soft: #1f2937;
+            --text-muted: #9ca3af;
         }
 
-        /* ----- SIDEBAR ----- */
-
-        .sidebar {
-            width: 320px;               /* фіксована ширина */
-            min-width: 320px;
-            max-width: 320px;
-
-            background: #0f172a;
-            padding: 20px;
-            overflow-y: auto;
+        * {
             box-sizing: border-box;
         }
 
-        .title {
-            font-size: 28px;
-            font-weight: bold;
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+            color: #e5e7eb;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
 
-        .subtitle {
+        /* APP LAYOUT */
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .topbar {
+            height: 56px;
+            padding: 0 20px;
+            border-bottom: 1px solid #111827;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(18px);
+            background: linear-gradient(to right, rgba(15,23,42,0.9), rgba(15,23,42,0.6));
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 20%, #60a5fa, #1d4ed8 55%, #020617 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(59,130,246,0.6);
             font-size: 14px;
-            color: #cbd5e1;
-            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148,163,184,0.4);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #e5e7eb;
+            background: rgba(15,23,42,0.7);
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 10px 4px 4px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.9);
+            border: 1px solid #1f2937;
+        }
+
+        .user-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 20%, #4ade80, #22c55e 50%, #166534 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .user-name {
+            font-size: 13px;
+        }
+
+        .logout-btn {
+            border: none;
+            background: rgba(239,68,68,0.15);
+            color: #fecaca;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239,68,68,0.25);
+        }
+
+        .layout {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1.5fr) 290px;
+            height: calc(100vh - 56px);
+        }
+
+        /* SIDEBAR (LEFT) */
+
+        .sidebar {
+            background: var(--bg-sidebar);
+            padding: 16px 16px 16px 18px;
+            border-right: 1px solid #111827;
+            overflow-y: auto;
+        }
+
+        .sidebar-heading {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
         }
 
         .card {
-            background: #1e293b;
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 22px;
+            background: var(--bg-card-soft);
+            border-radius: 16px;
+            padding: 14px 14px 12px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(15,23,42,0.9);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.45);
         }
 
-        /* ----- GRID OF TWO INPUTS (X/Y) ----- */
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #9ca3af;
+        }
+
+        .card-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.8);
+            border: 1px solid #1f2937;
+            color: #6b7280;
+        }
 
         .field-row {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
         }
 
@@ -58,161 +211,578 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            margin-bottom: 8px;
         }
 
         .field label {
-            font-size: 14px;
-            margin-bottom: 4px;
-            color: #cbd5e1;
+            font-size: 11px;
+            margin-bottom: 3px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
         }
 
         .field input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 8px;
-            color: #fff;
-            width: 100%;            /* <-- ВАЖЛИВО! НЕ ДАЄ ВИЛАЗИТИ */
+            background: #020617;
+            border: 1px solid #1f2937;
+            border-radius: 10px;
+            padding: 7px 9px;
+            color: #e5e7eb;
+            width: 100%;
             box-sizing: border-box;
+            font-size: 13px;
         }
 
-        /* ----- BUTTONS ----- */
+        .field input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.6);
+        }
+
+        .field-caption {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
 
         .button-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
+            margin-top: 6px;
         }
 
         button {
-            background: #334155;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: #111827;
+            padding: 7px 11px;
+            border: 1px solid #1f2937;
+            border-radius: 999px;
+            color: #e5e7eb;
             cursor: pointer;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease;
         }
 
         button.primary {
-            background: #3b82f6;
+            background: var(--accent);
+            border-color: rgba(96,165,250,0.9);
+            box-shadow: 0 0 18px rgba(59,130,246,0.55);
+        }
+
+        button.danger {
+            background: rgba(239,68,68,0.12);
+            border-color: rgba(239,68,68,0.5);
+            color: #fecaca;
         }
 
         button:hover {
-            opacity: 0.85;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background: #0f172a;
         }
 
-        /* ----- MAIN (CANVAS AREA) ----- */
+        button.primary:hover {
+            background: #2563eb;
+        }
+
+        button.danger:hover {
+            background: rgba(239,68,68,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+        }
+
+        .hint {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        /* MAIN CENTER AREA */
 
         .main {
-            flex: 1;
+            padding: 16px 16px 16px 16px;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            padding-left: 0;
-            box-sizing: border-box;
-            background: #f1f5f9;
+            gap: 10px;
         }
 
-        .canvas-container {
+        .canvas-shell {
             flex: 1;
-            background: white;
-            border-radius: 20px;
-            padding: 10px;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            border-radius: 24px;
+            padding: 12px;
+            background: radial-gradient(circle at top, #111827 0, #020617 52%);
+            box-shadow:
+                    0 0 0 1px rgba(15,23,42,1),
+                    0 35px 80px rgba(0,0,0,0.9);
             position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                    radial-gradient(circle at 15% 0, rgba(59,130,246,0.18), transparent 55%),
+                    radial-gradient(circle at 85% 100%, rgba(34,197,94,0.18), transparent 55%);
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .canvas-header {
+            position: absolute;
+            top: 10px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            z-index: 2;
+            color: #9ca3af;
+        }
+
+        .canvas-header-left {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .canvas-chip {
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.9);
+            border: 1px solid rgba(31,41,55,0.9);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .canvas-chip-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 12px rgba(34,197,94,0.9);
+        }
+
+        .canvas-chip-label {
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        /* MINIMAP */
+
+        .minimap-container {
+            position: absolute;
+            top: 48px;      /* було 18px */
+            right: 18px;
+            width: 120px;
+            height: 120px;
+            border-radius: 999px;
+            border: 1px solid rgba(59,130,246,0.5);
+            background: radial-gradient(circle at 30% 20%, rgba(15,23,42,0.96), rgba(15,23,42,0.7));
+            box-shadow:
+                    0 0 0 1px rgba(15,23,42,0.9),
+                    0 18px 40px rgba(0,0,0,0.9);
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        #minimap {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .minimap-pulse {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(59,130,246,0.2), transparent 70%);
+            animation: radarPulse 3s infinite ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes radarPulse {
+            0% {
+                transform: scale(0.2);
+                opacity: 0.45;
+            }
+            70% {
+                opacity: 0.15;
+            }
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
         }
 
         #canvas {
-            width: 900px;
-            height: 600px;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 980px;
+            max-height: 640px;
             display: block;
-            margin: auto;
+            margin: 20px auto 0;
+            border-radius: 18px;
+            background: #020617;
+            box-shadow:
+                    0 0 0 1px #111827,
+                    0 25px 60px rgba(0,0,0,0.9);
         }
 
-        .status {
-            margin-top: 10px;
-            font-size: 16px;
-            color: #0f172a;
+        .status-bar {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 4px 0;
         }
 
+        .status-items {
+            display: flex;
+            gap: 18px;
+        }
 
+        .status-label {
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .status-value {
+            color: #e5e7eb;
+        }
+
+        .step-progress {
+            flex: 0 0 auto;
+            min-width: 120px;
+            height: 4px;
+            border-radius: 999px;
+            background: #020617;
+            overflow: hidden;
+            border: 1px solid #111827;
+        }
+
+        .step-progress-inner {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(to right, #22c55e, #3b82f6);
+            transition: width 0.15s ease;
+        }
+
+        /* RIGHT PANEL */
+
+        .info-panel {
+            border-left: 1px solid #111827;
+            background: radial-gradient(circle at top, #020617 0, #020617 60%);
+            padding: 14px 14px 14px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .info-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .info-card {
+            flex: 1;
+            background: rgba(15,23,42,0.95);
+            border-radius: 18px;
+            border: 1px solid rgba(31,41,55,0.9);
+            padding: 12px;
+            box-shadow:
+                    0 18px 40px rgba(0,0,0,0.9),
+                    inset 0 0 16px rgba(15,23,42,0.9);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .info-pill {
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(55,65,81,0.9);
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .drone-list {
+            margin-top: 4px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .drone-item {
+            border-radius: 12px;
+            padding: 8px 8px;
+            margin-bottom: 6px;
+            background: rgba(15,23,42,0.85);
+            border: 1px solid #1f2937;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: 11px;
+        }
+
+        .drone-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .drone-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .drone-chip {
+            padding: 2px 6px;
+            border-radius: 999px;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border: 1px solid rgba(75,85,99,0.9);
+        }
+
+        .drone-meta {
+            display: flex;
+            gap: 10px;
+            color: #9ca3af;
+        }
+
+        .drone-meta span {
+            white-space: nowrap;
+        }
+
+        .drone-color-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            margin-right: 4px;
+            box-shadow: 0 0 10px rgba(148,163,184,0.6);
+        }
+
+        .empty-state {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .legend {
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div>
-        <div class="title">UAV Swarm</div>
-        <div class="subtitle">Проста та красива візуалізація</div>
-    </div>
+<!-- AUTH CHECK -->
+<script>
+    const storedUserInit = localStorage.getItem("uav_user");
+    if (!storedUserInit) {
+        window.location.href = "login.html";
+    }
+</script>
 
-    <div class="card">
-        <div class="group-label">Базова станція</div>
-        <div class="field-row">
-            <div class="field">
-                <label>Base X</label>
-                <input id="baseX" type="number" value="0">
+<div class="app">
+    <!-- TOP BAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="logo-mark">U</div>
+            <div class="logo-text">
+                <div class="logo-title">UAV Swarm Console</div>
+                <div class="logo-subtitle">Swarm coordination &amp; routing</div>
             </div>
-            <div class="field">
-                <label>Base Y</label>
-                <input id="baseY" type="number" value="0">
-            </div>
+            <span class="tag">Sandbox</span>
         </div>
-        <div class="field" style="margin-top:10px;">
-            <label>Base Z</label>
-            <input id="baseZ" type="number" value="0">
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="group-label">User</div>
-        <div class="field-row">
-            <div class="field">
-                <label>User X</label>
-                <input id="userX" type="number" value="60">
-            </div>
-            <div class="field">
-                <label>User Y</label>
-                <input id="userY" type="number" value="70">
+        <div class="topbar-right">
+            <span class="tag">v0.1 · local</span>
+            <div class="user-pill">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-name" id="userName">user</div>
+                <button class="logout-btn" id="logoutBtn">
+                    <span>⏏</span>
+                    <span>Logout</span>
+                </button>
             </div>
         </div>
-    </div>
+    </header>
 
-    <div class="card">
-        <div class="group-label">Параметри</div>
-        <div class="field">
-            <label>Step size</label>
-            <input id="stepSize" type="number" step="0.1" value="3">
-        </div>
-    </div>
+    <div class="layout">
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-heading">Mission setup</div>
 
-    <div class="card">
-        <div class="group-label">Управління</div>
-        <div class="button-row">
-            <button class="primary" id="recalcBtn">Перерахувати</button>
-            <button id="prevStep">← Назад</button>
-            <button id="nextStep">Вперед →</button>
-            <button id="startAnim">▶ Старт</button>
-            <button id="stopAnim">⏸ Стоп</button>
-        </div>
-        <div style="margin-top:8px; font-size:12px; color:#cbd5e1;">
-            Клікніть по карті, щоби додати нового дрона.
-        </div>
-    </div>
-</div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Base station</div>
+                    <div class="card-badge">XYZ</div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Base X</label>
+                        <input id="baseX" type="number" value="0">
+                    </div>
+                    <div class="field">
+                        <label>Base Y</label>
+                        <input id="baseY" type="number" value="0">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Base Z</label>
+                    <input id="baseZ" type="number" value="0">
+                    <div class="field-caption">Висота базової станції</div>
+                </div>
+            </div>
 
-<div class="main">
-    <div class="canvas-container">
-        <canvas id="canvas" width="900" height="600"></canvas>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">User position</div>
+                    <div class="card-badge">Target</div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>User X</label>
+                        <input id="userX" type="number" value="60">
+                    </div>
+                    <div class="field">
+                        <label>User Y</label>
+                        <input id="userY" type="number" value="70">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Routing params</div>
+                    <div class="card-badge">Step</div>
+                </div>
+                <div class="field">
+                    <label>Step size</label>
+                    <input id="stepSize" type="number" step="0.1" value="3">
+                    <div class="field-caption">Крок руху дронів у моделі.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Control</div>
+                    <div class="card-badge">Swarm</div>
+                </div>
+                <div class="button-row">
+                    <button class="primary" id="recalcBtn">⚙ Перерахувати</button>
+                    <button id="prevStep">← Крок назад</button>
+                    <button id="nextStep">Крок вперед →</button>
+                    <button id="startAnim">▶ Старт</button>
+                    <button id="stopAnim">⏸ Стоп</button>
+                    <button class="danger" id="clearDrones">🗑 Очистити дронів</button>
+                </div>
+                <div class="hint">
+                    • Клік по карті додає нового дрона.<br>
+                    • Змінюєш параметри → тисни «Перерахувати».
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CENTER -->
+        <main class="main">
+            <div class="canvas-shell">
+                <div class="canvas-header">
+                    <div class="canvas-header-left">
+                        <div class="canvas-chip">
+                            <span class="canvas-chip-dot"></span>
+                            <span class="canvas-chip-label">Live sandbox</span>
+                        </div>
+                    </div>
+                    <div class="canvas-header-right" style="font-size:11px; color:#6b7280;">
+                        Click to spawn UAV · Scroll to inspect
+                    </div>
+                </div>
+
+                <!-- MINIMAP -->
+                <div class="minimap-container">
+                    <canvas id="minimap" width="120" height="120"></canvas>
+                    <div class="minimap-pulse"></div>
+                </div>
+
+                <canvas id="canvas" width="900" height="600"></canvas>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-items">
+                    <div>
+                        <div class="status-label">Step</div>
+                        <div class="status-value" id="statusStep">0</div>
+                    </div>
+                    <div>
+                        <div class="status-label">Drones</div>
+                        <div class="status-value" id="statusDrones">0</div>
+                    </div>
+                </div>
+                <div class="step-progress">
+                    <div class="step-progress-inner" id="stepProgressInner"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT INFO PANEL -->
+        <aside class="info-panel">
+            <div class="info-title">Swarm status</div>
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="card-title" style="margin:0;">Drones</div>
+                    <div class="info-pill" id="droneCountPill">0 active</div>
+                </div>
+                <div id="droneList" class="drone-list">
+                    <div class="empty-state">
+                        Немає дронів. Додай першого кліком по карті.
+                    </div>
+                </div>
+                <div class="legend">
+                    Base — чорна, User — помаранчева точка. Кольори дронів відповідають елементам у списку.
+                </div>
+            </div>
+        </aside>
     </div>
-    <div class="status" id="status">Шаг: 0 | Дронов: 0</div>
 </div>
 
 <script>
     const API_URL = "http://localhost:8000/api/uav-service/uav/compute/";
 
+    // Canvas & controls
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+
+    const minimap = document.getElementById("minimap");
+    const mm = minimap.getContext("2d");
+    const M_CENTER_X = minimap.width / 2;
+    const M_CENTER_Y = minimap.height / 2;
+    const M_SCALE = 0.6;   // масштаб world->radar
 
     const baseXInput = document.getElementById("baseX");
     const baseYInput = document.getElementById("baseY");
@@ -221,30 +791,79 @@
     const userYInput = document.getElementById("userY");
     const stepInput  = document.getElementById("stepSize");
 
-    const recalcBtn  = document.getElementById("recalcBtn");
-    const prevBtn    = document.getElementById("prevStep");
-    const nextBtn    = document.getElementById("nextStep");
-    const startBtn   = document.getElementById("startAnim");
-    const stopBtn    = document.getElementById("stopAnim");
-    const statusDiv  = document.getElementById("status");
+    const recalcBtn   = document.getElementById("recalcBtn");
+    const prevBtn     = document.getElementById("prevStep");
+    const nextBtn     = document.getElementById("nextStep");
+    const startBtn    = document.getElementById("startAnim");
+    const stopBtn     = document.getElementById("stopAnim");
+    const clearBtn    = document.getElementById("clearDrones");
+    const logoutBtn   = document.getElementById("logoutBtn");
+
+    const statusStep   = document.getElementById("statusStep");
+    const statusDrones = document.getElementById("statusDrones");
+    const stepProgressInner = document.getElementById("stepProgressInner");
+    const droneListDiv = document.getElementById("droneList");
+    const droneCountPill = document.getElementById("droneCountPill");
+    const userNameSpan = document.getElementById("userName");
+    const userAvatar   = document.getElementById("userAvatar");
 
     const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#a855f7", "#f97316", "#14b8a6", "#e11d48"];
 
-    // масштаб и смещение (центр холста — (0,0))
+    // Set user name in header
+    const storedUser = localStorage.getItem("uav_user") || "admin";
+    userNameSpan.textContent = storedUser;
+    userAvatar.textContent = storedUser.charAt(0).toUpperCase();
+
     const SCALE = 4;
     const OFFSET_X = canvas.width / 2;
     const OFFSET_Y = canvas.height / 2;
 
-    function toCanvasX(x) { return x * SCALE + OFFSET_X; }
-    function toCanvasY(y) { return y * SCALE + OFFSET_Y; }
-    function fromCanvasX(px) { return (px - OFFSET_X) / SCALE; }
-    function fromCanvasY(py) { return (py - OFFSET_Y) / SCALE; }
+    function toCanvasX(x)   { return x * SCALE + OFFSET_X; }
+    function toCanvasY(y)   { return y * SCALE + OFFSET_Y; }
+    function fromCanvasX(px){ return (px - OFFSET_X) / SCALE; }
+    function fromCanvasY(py){ return (py - OFFSET_Y) / SCALE; }
 
-    let initialDronePositions = []; // [{ label, coordinates: {x,y,z} }, ...]
+    function toMiniX(worldX){ return M_CENTER_X + worldX * M_SCALE; }
+    function toMiniY(worldY){ return M_CENTER_Y + worldY * M_SCALE; }
+
+    let initialDronePositions = [];
     let responseData = null;
     let currentStep = 0;
     let maxSteps = 0;
     let animInterval = null;
+
+    function drawGrid() {
+        const step = 50;
+        ctx.strokeStyle = "rgba(148,163,184,0.06)";
+        ctx.lineWidth = 1;
+
+        for (let x = 0; x < canvas.width; x += step) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+
+        for (let y = 0; y < canvas.height; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = "rgba(148,163,184,0.3)";
+        ctx.lineWidth = 1.4;
+
+        ctx.beginPath();
+        ctx.moveTo(OFFSET_X, 0);
+        ctx.lineTo(OFFSET_X, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, OFFSET_Y);
+        ctx.lineTo(canvas.width, OFFSET_Y);
+        ctx.stroke();
+    }
 
     function drawPointWorld(x, y, color, label) {
         const cx = toCanvasX(x);
@@ -252,19 +871,206 @@
         ctx.beginPath();
         ctx.arc(cx, cy, 6, 0, Math.PI * 2);
         ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 16;
         ctx.fill();
+        ctx.shadowBlur = 0;
+
         if (label) {
-            ctx.fillStyle = "#111827";
-            ctx.font = "12px system-ui";
-            ctx.fillText(label, cx + 8, cy);
+            ctx.fillStyle = "#e5e7eb";
+            ctx.font = "11px system-ui";
+            ctx.fillText(label, cx + 8, cy + 3);
         }
     }
+
+    function updateStatus() {
+        const dronesCount = initialDronePositions.length || (responseData ? Object.keys(responseData.drone_positions).length : 0);
+        statusStep.textContent = currentStep;
+        statusDrones.textContent = dronesCount;
+        droneCountPill.textContent = `${dronesCount} active`;
+
+        if (maxSteps > 0) {
+            const progress = (currentStep / (maxSteps - 1)) * 100;
+            stepProgressInner.style.width = `${Math.min(Math.max(progress, 0), 100)}%`;
+        } else {
+            stepProgressInner.style.width = "0%";
+        }
+    }
+
+    function updateDroneList() {
+        if (!droneListDiv) return;
+
+        droneListDiv.innerHTML = "";
+        let dronesCount = 0;
+
+        if (responseData && responseData.drone_positions) {
+            const entries = Object.entries(responseData.drone_positions);
+            dronesCount = entries.length;
+            entries.forEach(([label, track], idx) => {
+                const stepIdx = Math.min(currentStep, track.length - 1);
+                const pos = track[stepIdx];
+
+                const item = document.createElement("div");
+                item.className = "drone-item";
+
+                const header = document.createElement("div");
+                header.className = "drone-item-header";
+
+                const labelSpan = document.createElement("div");
+                labelSpan.className = "drone-label";
+                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${COLORS[idx % COLORS.length]}"></span>${label}`;
+
+                const chip = document.createElement("div");
+                chip.className = "drone-chip";
+                chip.textContent = `step ${stepIdx}`;
+
+                header.appendChild(labelSpan);
+                header.appendChild(chip);
+
+                const meta = document.createElement("div");
+                meta.className = "drone-meta";
+                meta.innerHTML = `
+                    <span> x: ${pos.x.toFixed(1)} </span>
+                    <span> y: ${pos.y.toFixed(1)} </span>
+                    <span> z: ${pos.z.toFixed(1)} </span>
+                `;
+
+                item.appendChild(header);
+                item.appendChild(meta);
+                droneListDiv.appendChild(item);
+            });
+        } else if (initialDronePositions.length > 0) {
+            dronesCount = initialDronePositions.length;
+            initialDronePositions.forEach((d, idx) => {
+                const item = document.createElement("div");
+                item.className = "drone-item";
+
+                const header = document.createElement("div");
+                header.className = "drone-item-header";
+
+                const labelSpan = document.createElement("div");
+                labelSpan.className = "drone-label";
+                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${COLORS[idx % COLORS.length]}"></span>${d.label}`;
+
+                const chip = document.createElement("div");
+                chip.className = "drone-chip";
+                chip.textContent = "initial";
+
+                header.appendChild(labelSpan);
+                header.appendChild(chip);
+
+                const meta = document.createElement("div");
+                meta.className = "drone-meta";
+                meta.innerHTML = `
+                    <span> x: ${d.coordinates.x.toFixed(1)} </span>
+                    <span> y: ${d.coordinates.y.toFixed(1)} </span>
+                    <span> z: ${d.coordinates.z.toFixed(1)} </span>
+                `;
+
+                item.appendChild(header);
+                item.appendChild(meta);
+                droneListDiv.appendChild(item);
+            });
+        } else {
+            droneListDiv.innerHTML = `
+                <div class="empty-state">
+                    Немає дронів. Додай першого кліком по карті.
+                </div>
+            `;
+        }
+
+        droneCountPill.textContent = `${dronesCount} active`;
+    }
+
+    // ---- MINIMAP ----
+
+    function drawMiniDot(worldX, worldY, color, radius = 3) {
+        const x = toMiniX(worldX);
+        const y = toMiniY(worldY);
+
+        mm.beginPath();
+        mm.arc(x, y, radius, 0, Math.PI * 2);
+        mm.fillStyle = color;
+        mm.shadowColor = color;
+        mm.shadowBlur = 8;
+        mm.fill();
+        mm.shadowBlur = 0;
+    }
+
+    function drawMiniMap() {
+        mm.clearRect(0, 0, minimap.width, minimap.height);
+
+        // Background gradient
+        const grad = mm.createRadialGradient(M_CENTER_X, M_CENTER_Y, 5, M_CENTER_X, M_CENTER_Y, 60);
+        grad.addColorStop(0, "rgba(15,23,42,0.98)");
+        grad.addColorStop(1, "rgba(15,23,42,0.7)");
+        mm.fillStyle = grad;
+        mm.fillRect(0, 0, minimap.width, minimap.height);
+
+        // Concentric rings
+        mm.strokeStyle = "rgba(148,163,184,0.35)";
+        mm.lineWidth = 0.8;
+        [25, 40, 55].forEach(r => {
+            mm.beginPath();
+            mm.arc(M_CENTER_X, M_CENTER_Y, r, 0, Math.PI * 2);
+            mm.stroke();
+        });
+
+        // Crosshair
+        mm.strokeStyle = "rgba(148,163,184,0.25)";
+        mm.beginPath();
+        mm.moveTo(M_CENTER_X, 0);
+        mm.lineTo(M_CENTER_X, minimap.height);
+        mm.stroke();
+
+        mm.beginPath();
+        mm.moveTo(0, M_CENTER_Y);
+        mm.lineTo(minimap.width, M_CENTER_Y);
+        mm.stroke();
+
+        // Base & user coords
+        let baseX, baseY, userX, userY;
+
+        if (responseData) {
+            baseX = responseData.base_coordinates.x;
+            baseY = responseData.base_coordinates.y;
+            userX = responseData.user_coordinates.x;
+            userY = responseData.user_coordinates.y;
+        } else {
+            baseX = parseFloat(baseXInput.value) || 0;
+            baseY = parseFloat(baseYInput.value) || 0;
+            userX = parseFloat(userXInput.value) || 0;
+            userY = parseFloat(userYInput.value) || 0;
+        }
+
+        // Base (центр)
+        drawMiniDot(baseX, baseY, "#000000", 3);
+        // User
+        drawMiniDot(userX, userY, "#f97316", 3);
+
+        // Drones
+        if (responseData && responseData.drone_positions) {
+            let i = 0;
+            for (const [label, track] of Object.entries(responseData.drone_positions)) {
+                const idx = Math.min(currentStep, track.length - 1);
+                const pos = track[idx];
+                drawMiniDot(pos.x, pos.y, COLORS[i % COLORS.length], 3);
+                i++;
+            }
+        } else if (initialDronePositions.length > 0) {
+            initialDronePositions.forEach((d, idx) => {
+                drawMiniDot(d.coordinates.x, d.coordinates.y, COLORS[idx % COLORS.length], 3);
+            });
+        }
+    }
+
+    // ---- MAIN DRAW ----
 
     function drawFrame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawGrid();
+
         if (!responseData) {
-            // просто отрисуем базу, юзера и стартовые дроны, если маршрут ещё не считали
             const baseX = parseFloat(baseXInput.value) || 0;
             const baseY = parseFloat(baseYInput.value) || 0;
             const userX = parseFloat(userXInput.value) || 0;
@@ -278,17 +1084,17 @@
             });
 
             updateStatus();
+            updateDroneList();
+            drawMiniMap();
             return;
         }
 
-        // база и пользователь
         const base = responseData.base_coordinates;
         drawPointWorld(base.x, base.y, "#000000", "Base");
 
         const user = responseData.user_coordinates;
         drawPointWorld(user.x, user.y, "#f97316", "User");
 
-        // дроны на текущем шаге
         let i = 0;
         for (const [label, track] of Object.entries(responseData.drone_positions)) {
             const idx = Math.min(currentStep, track.length - 1);
@@ -298,55 +1104,13 @@
         }
 
         updateStatus();
-    }
-
-    function drawGrid() {
-      const step = 50; // каждые 50px
-      ctx.strokeStyle = "rgba(0,0,0,0.05)";
-      ctx.lineWidth = 1;
-
-      // вертикальные линии
-      for (let x = 0; x < canvas.width; x += step) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, canvas.height);
-          ctx.stroke();
-      }
-
-      // горизонтальные линии
-      for (let y = 0; y < canvas.height; y += step) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(canvas.width, y);
-          ctx.stroke();
-      }
-
-      // Ось X и Y в центре
-      ctx.strokeStyle = "rgba(0,0,0,0.25)";
-      ctx.lineWidth = 1.5;
-
-      // Ось Y
-      ctx.beginPath();
-      ctx.moveTo(OFFSET_X, 0);
-      ctx.lineTo(OFFSET_X, canvas.height);
-      ctx.stroke();
-
-      // Ось X
-      ctx.beginPath();
-      ctx.moveTo(0, OFFSET_Y);
-      ctx.lineTo(canvas.width, OFFSET_Y);
-      ctx.stroke();
-  }
-
-
-    function updateStatus() {
-        const dronesCount = initialDronePositions.length || (responseData ? Object.keys(responseData.drone_positions).length : 0);
-        statusDiv.innerHTML = `<span>Шаг: ${currentStep}</span><span>Дронов: ${dronesCount}</span>`;
+        updateDroneList();
+        drawMiniMap();
     }
 
     async function fetchData() {
         if (initialDronePositions.length === 0) {
-            alert("Сначала добавь хотя бы один дрон кликом по карте.");
+            alert("Сначала добавь хотя бы одного дрона кликнув по карте.");
             return;
         }
 
@@ -372,7 +1136,6 @@
             });
 
             if (!res.ok) {
-                console.error("Backend error:", res.status);
                 alert("Ошибка ответа сервера: " + res.status);
                 return;
             }
@@ -387,7 +1150,7 @@
         }
     }
 
-    // обработчик клика по карте — создаём новый дрон
+    // Canvas click = add drone
     canvas.addEventListener("click", (e) => {
         const rect = canvas.getBoundingClientRect();
         const px = e.clientX - rect.left;
@@ -403,16 +1166,13 @@
             coordinates: { x: worldX, y: worldY, z: defaultZ }
         });
 
-        // сбрасываем маршрут, так как стартовые условия изменились
         responseData = null;
         currentStep = 0;
         drawFrame();
     });
 
-    // кнопки
-    recalcBtn.onclick = () => {
-        fetchData();
-    };
+    // Buttons
+    recalcBtn.onclick = () => fetchData();
 
     prevBtn.onclick = () => {
         if (!responseData) return;
@@ -442,7 +1202,20 @@
         }
     };
 
-    // первый рендер — просто база + юзер
+    clearBtn.onclick = () => {
+        initialDronePositions = [];
+        responseData = null;
+        currentStep = 0;
+        maxSteps = 0;
+        drawFrame();
+    };
+
+    logoutBtn.onclick = () => {
+        localStorage.removeItem("uav_user");
+        window.location.href = "login.html";
+    };
+
+    // First render
     drawFrame();
 </script>
 
