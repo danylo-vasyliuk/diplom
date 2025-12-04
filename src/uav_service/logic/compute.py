@@ -8,6 +8,22 @@ from uav_service.logic.models import Coordinates, Coordinates3D, Drone
 from uav_service.logic.utils import dh_transform
 
 
+def drone_distance_to_bridge_line(drone, base, user):
+    p = np.array([drone.coordinates.x, drone.coordinates.y, drone.coordinates.z])
+    return np.linalg.norm(np.cross(p - base, p - user)) / np.linalg.norm(user - base)
+
+
+def angle_deg(a, b):
+    """Return yaw angle in DEGREES from point a -> b."""
+    dx = b[0] - a[0]
+    dy = b[1] - a[1]
+
+    if abs(dx) < 1e-6 and abs(dy) < 1e-6:
+        return 0.0
+
+    return math.degrees(math.atan2(dy, dx))
+
+
 def calculate_bridge_targets(
     base: np.ndarray,
     user: np.ndarray,
@@ -38,42 +54,30 @@ def calculate_bridge_targets(
     return bridge_targets
 
 
-def assign_drones_to_targets(
-    drones: List[Drone],
-    bridge_targets: List[np.ndarray],
-    base: np.ndarray,
-) -> List[Tuple[Drone, np.ndarray]]:
-    """Assign drones to bridge positions in a reasonable, monotonic way.
+def assign_drones_to_targets(drones, bridge_targets, base, user):
+    """Choose closest drones to line, sort by distance along trajectory, assign 1-to-1."""
 
-    - Sort drones by distance from base.
-    - Sort targets by distance from base.
-    - Pair i-th drone with i-th target (no crossing, no 'closest to base' flying far).
-    """
-    if not bridge_targets:
-        return []
+    # Sort by closeness to trajectory
+    drones_sorted = sorted(
+        drones, key=lambda d: drone_distance_to_bridge_line(d, base, user)
+    )
 
-    # Distance-from-base helpers
-    def dist_from_base_pos(pos: np.ndarray) -> float:
-        return float(np.linalg.norm(pos - base))
+    needed = len(bridge_targets)
+    selected = drones_sorted[:needed]
 
-    def dist_from_base_drone(d: Drone) -> float:
-        return float(
-            np.linalg.norm(
-                np.array([d.coordinates.x, d.coordinates.y, d.coordinates.z], float)
-                - base
-            )
-        )
+    # Sort drones along the base→user direction
+    drones_ordered = sorted(
+        selected,
+        key=lambda d: np.linalg.norm(
+            np.array([d.coordinates.x, d.coordinates.y, d.coordinates.z]) - base
+        ),
+    )
 
-    # Sort drones and targets along base→user direction
-    drones_sorted = sorted(drones, key=dist_from_base_drone)
-    targets_sorted = sorted(bridge_targets, key=dist_from_base_pos)
+    # Sort targets along the same direction
+    targets_ordered = sorted(bridge_targets, key=lambda t: np.linalg.norm(t - base))
 
-    assignments: List[Tuple[Drone, np.ndarray]] = []
-
-    for drone, target in zip(drones_sorted, targets_sorted):
-        assignments.append((drone, target))
-
-    return assignments
+    # Assign i-th drone → i-th target
+    return list(zip(drones_ordered, targets_ordered))
 
 
 def calculate_yaw_to_user(position: np.ndarray, user: np.ndarray) -> float:
@@ -141,173 +145,98 @@ def generate_simple_trajectory(
     return trajectory
 
 
-def generate_dh_trajectory_simple(
-    start: np.ndarray, target: np.ndarray, user: np.ndarray, step_size: float
-) -> List[Coordinates3D]:
-    """
-    DH-based trajectory along a straight line from start to target.
+def generate_dh_trajectory_simple(start, target, user, step_size, initial_yaw_deg):
+    movement = target - start
+    dist = np.linalg.norm(movement)
 
-    We model the motion as a virtual 'arm' growing from the start point:
-      - theta = yaw of the movement in XY
-      - a     = horizontal projection of distance (along X')
-      - d     = vertical offset (along Z)
+    final_yaw_deg = angle_deg(target, user)
 
-    For step k we use a = k * step_forward, d = k * step_vertical
-    and compute T_k = T_start @ DH(theta, d, a, alpha=0).
-
-    Yaw is computed at each step toward the user to show rotation of the 'signal'.
-    """
-    movement_vector = target - start
-    total_distance = np.linalg.norm(movement_vector)
-
-    if total_distance < 0.001:
-        final_yaw = calculate_yaw_to_user(target, user)
+    if dist < 0.001:
         return [
             Coordinates3D(
-                x=float(target[0]),
-                y=float(target[1]),
-                z=float(target[2]),
-                yaw=math.degrees(final_yaw),
+                x=float(start[0]),
+                y=float(start[1]),
+                z=float(start[2]),
+                yaw=final_yaw_deg,
             )
         ]
 
-    steps_count = max(2, ceil(total_distance / step_size))
+    steps = max(2, math.ceil(dist / step_size))
 
-    dx, dy, dz = movement_vector
-    xy_distance = math.sqrt(dx * dx + dy * dy)
+    dx, dy, dz = movement
+    xy = math.sqrt(dx * dx + dy * dy)
 
-    # Movement direction in XY (yaw) and vertical pitch
-    move_yaw = math.atan2(dy, dx) if xy_distance > 0.001 else 0.0
-    pitch = math.atan2(dz, xy_distance) if xy_distance > 0.001 else 0.0
+    move_yaw_rad = math.atan2(dy, dx)
+    pitch = math.atan2(dz, xy)
 
-    step_distance = total_distance / (steps_count - 1)
-    step_forward = step_distance * math.cos(pitch)
-    step_vertical = step_distance * math.sin(pitch)
+    step_dist = dist / (steps - 1)
+    step_forward = step_dist * math.cos(pitch)
+    step_vertical = step_dist * math.sin(pitch)
 
-    trajectory: List[Coordinates3D] = []
+    T = np.eye(4)
+    T[:3, 3] = start.copy()
 
-    # Start transform
-    T_start = np.eye(4)
-    T_start[:3, 3] = start.copy()
+    result = []
 
-    for k in range(steps_count):
-        # Distance from start at this step
-        a_k = step_forward * k
-        d_k = step_vertical * k
+    for k in range(steps):
+        a_k = k * step_forward
+        d_k = k * step_vertical
 
-        # DH transform from local frame to step k
-        T_rel = dh_transform(theta=move_yaw, d=d_k, a=a_k, alpha=0.0)
+        T_rel = dh_transform(theta=move_yaw_rad, d=d_k, a=a_k, alpha=0.0)
+        T_step = T @ T_rel
+        x, y, z = T_step[:3, 3]
 
-        # Absolute transform
-        T = T_start @ T_rel
-        x, y, z = T[:3, 3]
+        yaw = initial_yaw_deg if k == 0 else final_yaw_deg
 
-        yaw = calculate_yaw_to_user(np.array([x, y, z], float), user)
+        result.append(Coordinates3D(x=float(x), y=float(y), z=float(z), yaw=float(yaw)))
 
-        trajectory.append(
-            Coordinates3D(
-                x=float(x),
-                y=float(y),
-                z=float(z),
-                yaw=math.degrees(yaw),
-            )
-        )
+    # Ensure exact target
+    result[-1].x = float(target[0])
+    result[-1].y = float(target[1])
+    result[-1].z = float(target[2])
+    result[-1].yaw = float(final_yaw_deg)
 
-    # Ensure exact target on the last step
-    trajectory[-1] = Coordinates3D(
-        x=float(target[0]),
-        y=float(target[1]),
-        z=float(target[2]),
-        yaw=math.degrees(calculate_yaw_to_user(target, user)),
-    )
-
-    return trajectory
+    return result
 
 
 def compute_drone_positions(
-    user_coordinates: Coordinates,
-    base_coordinates: Coordinates3D,
-    drones: List[Drone],
-    max_drone_spacing: float = 7.0,
-    step_size: float = 1.0,
-    use_dh_transform: bool = True,
-) -> Dict[str, List[Coordinates3D]]:
-    """
-    Main function to compute drone bridge positions.
-    """
-    if not drones:
-        return {}
+    user_coordinates,
+    base_coordinates,
+    drones,
+    max_drone_spacing=7.0,
+    step_size=5.0,
+    use_dh_transform=True,
+):
 
     base = np.array([base_coordinates.x, base_coordinates.y, base_coordinates.z], float)
     user = np.array([user_coordinates.x, user_coordinates.y, 0.0], float)
 
+    # Generate bridge targets
     bridge_targets = calculate_bridge_targets(
-        base=base,
-        user=user,
-        max_drone_spacing=max_drone_spacing,
-        num_available_drones=len(drones),
+        base, user, max_drone_spacing, len(drones)
     )
 
-    # No bridge needed – just one relay in the middle
-    if not bridge_targets:
-        midpoint = (base + user) / 2
-        closest_drone = min(
-            drones,
-            key=lambda d: np.linalg.norm(
-                np.array([d.coordinates.x, d.coordinates.y, d.coordinates.z], float)
-                - midpoint
-            ),
-        )
+    # Assign drones
+    assignments = assign_drones_to_targets(drones, bridge_targets, base, user)
 
-        final_yaw = calculate_yaw_to_user(midpoint, user)
-        return {
-            closest_drone.label: [
-                Coordinates3D(
-                    x=float(midpoint[0]),
-                    y=float(midpoint[1]),
-                    z=float(midpoint[2]),
-                    yaw=math.degrees(final_yaw),
-                )
-            ]
-        }
-
-    # Assign drones to bridge positions (ordered from base to user)
-    assignments = assign_drones_to_targets(drones, bridge_targets, base)
-
-    result: Dict[str, List[Coordinates3D]] = {}
+    result = {}
 
     for drone, target in assignments:
         start = np.array(
             [drone.coordinates.x, drone.coordinates.y, drone.coordinates.z], float
         )
 
-        if use_dh_transform:
-            trajectory = generate_dh_trajectory_simple(
-                start=start, target=target, user=user, step_size=step_size
-            )
-        else:
-            trajectory = generate_simple_trajectory(
-                start=start, target=target, user=user, step_size=step_size
-            )
+        initial_yaw_deg = float(drone.coordinates.yaw)
 
-        result[drone.label] = trajectory
+        traj = generate_dh_trajectory_simple(
+            start=start,
+            target=target,
+            user=user,
+            step_size=step_size,
+            initial_yaw_deg=initial_yaw_deg,
+        )
 
-    # Unused drones: stay in place, face user
-    assigned_labels = {drone.label for drone, _ in assignments}
-    for drone in drones:
-        if drone.label not in assigned_labels:
-            drone_pos = np.array(
-                [drone.coordinates.x, drone.coordinates.y, drone.coordinates.z], float
-            )
-            yaw = calculate_yaw_to_user(drone_pos, user)
-            result[drone.label] = [
-                Coordinates3D(
-                    x=drone.coordinates.x,
-                    y=drone.coordinates.y,
-                    z=drone.coordinates.z,
-                    yaw=math.degrees(yaw),
-                )
-            ]
+        result[drone.label] = traj
 
     return result
 
