@@ -722,7 +722,6 @@
           <button id="startAnim">▶ Старт</button>
           <button id="stopAnim">⏸ Стоп</button>
           <button id="randomizeYaw">🔄 Рандомізувати Yaw</button>
-          <button id="fixYawValues">🔧 Виправити Yaw</button>
           <button class="danger" id="clearDrones">🗑 Очистити дронів</button>
         </div>
         <div class="hint">
@@ -825,7 +824,6 @@
     const clearBtn = document.getElementById("clearDrones");
     const logoutBtn = document.getElementById("logoutBtn");
     const randomizeYawBtn = document.getElementById("randomizeYaw");
-    const fixYawBtn = document.getElementById("fixYawValues");
 
     const statusStep = document.getElementById("statusStep");
     const statusDrones = document.getElementById("statusDrones");
@@ -851,6 +849,7 @@
     const OFFSET_X = canvas.width / 2;
     const OFFSET_Y = canvas.height / 2;
 
+    // Each drone: { label, coordinates: {x,y,z,yaw} }
     let initialDronePositions = [];
     let responseData = null;
     let currentStep = 0;
@@ -884,7 +883,10 @@
 
     function drawGrid() {
         const step = 50;
-        ctx.strokeStyle = "rgba(148,163,184,0.06)";
+        ctx.fillStyle = "#020617";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = "rgba(148,163,184,0.08)";
         ctx.lineWidth = 1;
 
         for (let x = 0; x < canvas.width; x += step) {
@@ -901,7 +903,7 @@
             ctx.stroke();
         }
 
-        ctx.strokeStyle = "rgba(148,163,184,0.3)";
+        ctx.strokeStyle = "rgba(148,163,184,0.35)";
         ctx.lineWidth = 1.4;
 
         ctx.beginPath();
@@ -940,15 +942,15 @@
 
         ctx.beginPath();
         ctx.arc(cx, cy, radarRange * SCALE, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(59, 130, 246, 0.25)";
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.45)";
+        ctx.lineWidth = 1.3;
         ctx.stroke();
 
         const gradient = ctx.createRadialGradient(
             cx, cy, radarRange * SCALE * 0.2,
             cx, cy, radarRange * SCALE
         );
-        gradient.addColorStop(0, "rgba(59, 130, 246, 0.12)");
+        gradient.addColorStop(0, "rgba(59, 130, 246, 0.15)");
         gradient.addColorStop(1, "rgba(59, 130, 246, 0)");
 
         ctx.beginPath();
@@ -958,8 +960,8 @@
 
         ctx.beginPath();
         ctx.arc(cx, cy, radarRange * SCALE * 0.5, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(59, 130, 246, 0.15)";
-        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.25)";
+        ctx.lineWidth = 0.9;
         ctx.stroke();
 
         const time = Date.now() / 1000;
@@ -972,8 +974,8 @@
             cx + Math.cos(sweepAngle) * radarRange * SCALE,
             cy + Math.sin(sweepAngle) * radarRange * SCALE
         );
-        ctx.strokeStyle = `rgba(59, 130, 246, ${0.5 * pulse})`;
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = `rgba(59, 130, 246, ${0.6 * pulse})`;
+        ctx.lineWidth = 1.6;
         ctx.stroke();
 
         ctx.beginPath();
@@ -989,7 +991,7 @@
         ctx.fillStyle = "#3b82f6";
         ctx.fill();
 
-        ctx.strokeStyle = "rgba(59, 130, 246, 0.1)";
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.18)";
         ctx.lineWidth = 0.8;
 
         ctx.beginPath();
@@ -1015,13 +1017,15 @@
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
+    // yawDeg is in math/world convention: 0° = +X, CCW to +Y.
+    // For screen we flip sign because Y is inverted.
     function drawDroneSignal(x, y, yawDeg, color) {
         const cx = toCanvasX(x);
         const cy = toCanvasY(y);
-        const signalRange = parseFloat(signalRangeInput.value) * 0.5 || 25;
+        const signalRange = (parseFloat(signalRangeInput.value) * 0.5) || 25;
         const signalAngleDeg = parseFloat(signalAngleInput.value) || 60;
 
-        const yaw = degToRad(yawDeg);
+        const yaw = -degToRad(yawDeg); // flip for canvas
         const signalAngle = signalAngleDeg * Math.PI / 180;
 
         const startAngle = yaw - signalAngle / 2;
@@ -1051,7 +1055,7 @@
 
         ctx.beginPath();
         ctx.arc(cx, cy, signalRange * SCALE, startAngle, endAngle);
-        ctx.strokeStyle = hexToRgba(color, 0.3);
+        ctx.strokeStyle = hexToRgba(color, 0.35);
         ctx.lineWidth = 1;
         ctx.stroke();
 
@@ -1059,19 +1063,21 @@
         ctx.arc(cx, cy, signalRange * SCALE * 0.6, startAngle, endAngle);
         ctx.lineTo(cx, cy);
         ctx.closePath();
-        ctx.fillStyle = hexToRgba(color, 0.15);
+        ctx.fillStyle = hexToRgba(color, 0.18);
         ctx.fill();
 
+        // direction line
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(
             cx + Math.cos(yaw) * signalRange * SCALE * 0.85,
             cy + Math.sin(yaw) * signalRange * SCALE * 0.85
         );
-        ctx.strokeStyle = hexToRgba(color, 0.5);
+        ctx.strokeStyle = hexToRgba(color, 0.6);
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
+        // drone body
         ctx.beginPath();
         ctx.arc(cx, cy, 6, 0, Math.PI * 2);
 
@@ -1086,6 +1092,7 @@
         ctx.fill();
         ctx.shadowBlur = 0;
 
+        // direction arrow
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(
@@ -1185,7 +1192,7 @@
         } else if (initialDronePositions.length > 0) {
             dronesCount = initialDronePositions.length;
             initialDronePositions.forEach((d, idx) => {
-                const yawDeg = d.yaw ?? 0;
+                const yawDeg = d.coordinates.yaw ?? 0;
 
                 const item = document.createElement("div");
                 item.className = "drone-item";
@@ -1315,9 +1322,7 @@
 
         if (!responseData) {
             initialDronePositions.forEach((d, idx) => {
-                const yawDeg = d.yaw ?? 0;
-                console.log(`Drawing initial drone ${d.label}: yaw=${yawDeg.toFixed(1)}°`);
-
+                const yawDeg = d.coordinates.yaw ?? 0;
                 drawDroneSignal(
                     d.coordinates.x,
                     d.coordinates.y,
@@ -1338,8 +1343,6 @@
             const idx = Math.min(currentStep, track.length - 1);
             const step = track[idx];
             const yawDeg = step.yaw ?? 0;
-
-            console.log(`Drawing response drone ${label} at step ${idx}: yaw=${yawDeg.toFixed(1)}°`);
 
             drawDroneSignal(
                 step.x,
@@ -1374,12 +1377,10 @@
             coordinates: {
                 x: worldX,
                 y: worldY,
-                z: defaultZ
-            },
-            yaw: randomYawDeg
+                z: defaultZ,
+                yaw: randomYawDeg
+            }
         });
-
-        console.log(`Added drone ${label} at (${worldX.toFixed(1)}, ${worldY.toFixed(1)}) with yaw: ${randomYawDeg.toFixed(1)}°`);
 
         responseData = null;
         currentStep = 0;
@@ -1408,13 +1409,11 @@
                 coordinates: {
                     x: drone.coordinates.x,
                     y: drone.coordinates.y,
-                    z: drone.coordinates.z
+                    z: drone.coordinates.z,
+                    yaw: drone.coordinates.yaw ?? 0 // degrees
                 },
-                yaw: drone.yaw ?? 0 // degrees
             }))
         };
-
-        console.log("Sending to backend (degrees):", JSON.stringify(payload, null, 2));
 
         try {
             const res = await fetch(API_URL, {
@@ -1429,16 +1428,14 @@
             }
 
             responseData = await res.json();
-            console.log("Received from backend:", responseData);
 
             if (responseData.drone_positions) {
                 Object.entries(responseData.drone_positions).forEach(([label, track]) => {
                     track.forEach(step => {
                         if (step.yaw === undefined || step.yaw === null) {
                             const initialDrone = initialDronePositions.find(d => d.label === label);
-                            step.yaw = initialDrone ? (initialDrone.yaw ?? 0) : 0;
+                            step.yaw = initialDrone ? (initialDrone.coordinates.yaw ?? 0) : 0;
                         } else {
-                            // Backend already in degrees; just normalize
                             step.yaw = ((step.yaw % 360) + 360) % 360;
                         }
                     });
@@ -1454,7 +1451,7 @@
         }
     }
 
-    // Randomize yaw (degrees)
+    // Randomize yaw (degrees) in initial positions
     randomizeYawBtn.onclick = () => {
         if (initialDronePositions.length === 0) {
             alert("Немає дронів для рандомізації.");
@@ -1462,37 +1459,12 @@
         }
 
         initialDronePositions.forEach(drone => {
-            drone.yaw = Math.random() * 360;
+            drone.coordinates.yaw = Math.random() * 360;
         });
 
         responseData = null;
         currentStep = 0;
-        console.log("Yaw values randomized (degrees) for all drones");
         drawFrame();
-    };
-
-    // Fix yaw in response using initial yaw if missing
-    fixYawBtn.onclick = () => {
-        if (responseData && responseData.drone_positions) {
-            Object.entries(responseData.drone_positions).forEach(([label, track]) => {
-                track.forEach(step => {
-                    if (step.yaw === undefined || step.yaw === null) {
-                        const initialDrone = initialDronePositions.find(d => d.label === label);
-                        if (initialDrone) {
-                            step.yaw = ((initialDrone.yaw ?? 0) % 360 + 360) % 360;
-                        } else {
-                            step.yaw = 0;
-                        }
-                    } else {
-                        step.yaw = ((step.yaw % 360) + 360) % 360;
-                    }
-                });
-            });
-            console.log("Yaw values fixed/normalized in response data (degrees)");
-            drawFrame();
-        } else {
-            alert("Немає даних для виправлення. Спочатку перерахуй.");
-        }
     };
 
     // Buttons
