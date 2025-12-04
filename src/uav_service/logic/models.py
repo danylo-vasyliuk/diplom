@@ -8,6 +8,7 @@ class Coordinates(BaseModel):
 
 class Coordinates3D(Coordinates):
     z: float
+    yaw: float = 0.0
 
 
 class Drone(BaseModel):
