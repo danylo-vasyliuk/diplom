@@ -834,6 +834,7 @@
     const userAvatar = document.getElementById("userAvatar");
 
     const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#a855f7", "#f97316", "#14b8a6", "#e11d48"];
+    let droneColorMap = {};
 
     // Utils: degrees <-> radians (for drawing only)
     function degToRad(deg) {
@@ -1167,7 +1168,7 @@
 
                 const labelSpan = document.createElement("div");
                 labelSpan.className = "drone-label";
-                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${COLORS[idx % COLORS.length]}"></span>${label}`;
+                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${droneColorMap[label]}"></span>${label}`;
 
                 const chip = document.createElement("div");
                 chip.className = "drone-chip";
@@ -1202,7 +1203,7 @@
 
                 const labelSpan = document.createElement("div");
                 labelSpan.className = "drone-label";
-                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${COLORS[idx % COLORS.length]}"></span>${d.label}`;
+                labelSpan.innerHTML = `<span class="drone-color-dot" style="background:${droneColorMap[label]}"></span>${d.label}`;
 
                 const chip = document.createElement("div");
                 chip.className = "drone-chip";
@@ -1298,7 +1299,7 @@
             for (const [label, track] of Object.entries(responseData.drone_positions)) {
                 const idx = Math.min(currentStep, track.length - 1);
                 const pos = track[idx];
-                drawMiniDot(pos.x, pos.y, COLORS[i % COLORS.length], 3);
+                drawMiniDot(pos.x, pos.y, droneColorMap[label], 3);
                 i++;
             }
         } else if (initialDronePositions.length > 0) {
@@ -1348,10 +1349,10 @@
                 step.x,
                 step.y,
                 yawDeg,
-                COLORS[i % COLORS.length]
+                droneColorMap[label]
             );
 
-            drawPointWorld(step.x, step.y, COLORS[i % COLORS.length], `${label} z=${step.z.toFixed(1)}`);
+            drawPointWorld(step.x, step.y, droneColorMap[label], `${label} z=${step.z.toFixed(1)}`);
             i++;
         }
 
@@ -1372,6 +1373,10 @@
         const randomYawDeg = Math.random() * 360;
 
         const label = `UAV${initialDronePositions.length + 1}`;
+
+        if (!droneColorMap[label]) {
+            droneColorMap[label] = COLORS[(initialDronePositions.length) % COLORS.length];
+        }
         initialDronePositions.push({
             label,
             coordinates: {
@@ -1428,6 +1433,13 @@
             }
 
             responseData = await res.json();
+
+            for (const label of Object.keys(responseData.drone_positions)) {
+                if (!droneColorMap[label]) {
+                    const index = Object.keys(droneColorMap).length;
+                    droneColorMap[label] = COLORS[index % COLORS.length];
+                }
+            }
 
             if (responseData.drone_positions) {
                 Object.entries(responseData.drone_positions).forEach(([label, track]) => {
